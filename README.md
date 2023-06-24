@@ -1,4 +1,4 @@
-# Go-Compiler
+# GoLF-Compiler
 
 This project compiles the Go Language Fragment (GoLF), which is a subset of the Go programming language, to MIPS assembly and output to `stdout`. 
 
