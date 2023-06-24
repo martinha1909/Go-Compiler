@@ -1,12 +1,12 @@
 # Go-Compiler
 
-This project compiles the Go Language Fragment ((GoLF)[https://pages.cpsc.ucalgary.ca/~aycock/411/golf.html]), which is a subset of the Go programming language, to MIPS assembly to `stdout`. 
+This project compiles the [Go Language Fragment (GoLF)](https://pages.cpsc.ucalgary.ca/~aycock/411/golf.html]), which is a subset of the Go programming language, to MIPS assembly and output to `stdout`. 
 
 Commits from this project was done in a private repository and recently made public. Hence, this repository was imported from that private repository and therefore no commit history can be found
 
 # Build
 
-Run `make` in the root directory of this project, which will create a binary executable. The binary is called `golf`, which is short for Go Language Fragment
+Run `make` in the root directory of this project, which will create a binary executable. The binary is called `golf`
 
 This `golf` executable takes in 1 input, which is the path of an input file and will print MIPS assembly code to `stdout` (or use the direct stream output to a file to create an assembly file (i.e `./golf input_file > output_file.s`)).  
 
