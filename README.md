@@ -2,6 +2,8 @@
 
 This project compiles a fragment of the Go programming language and output MIPS assembly to `stdout`. 
 
+Commits from this project was done in a private repository and recently made public. Hence, this repository was imported from that private repository and therefore no commit history can be found
+
 # Build
 
 Run `make` in the root directory of this project, which will create a binary executable. The binary is called `golf`, which is short for Go Language Fragment
