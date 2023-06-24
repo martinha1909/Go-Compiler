@@ -1,6 +1,6 @@
 # Go-Compiler
 
-This project compiles the [Go Language Fragment (GoLF)](https://pages.cpsc.ucalgary.ca/~aycock/411/golf.html]), which is a subset of the Go programming language, to MIPS assembly and output to `stdout`. 
+This project compiles the Go Language Fragment (GoLF), which is a subset of the Go programming language, to MIPS assembly and output to `stdout`. 
 
 Commits from this project was done in a private repository and recently made public. Hence, this repository was imported from that private repository and therefore no commit history can be found
 
@@ -19,11 +19,135 @@ This `golf` executable takes in 1 input, which is the path of an input file and 
 
 `scanner.c` is where the program starts, here we initialize all the variables that are needed to read in tokens as well as some error checkings. 
 
-### Notes
+## Example
+The following code in `GoLF`:  
 
-The difference between the scanner in this repository compared to that of the reference compiler provided by the professor is:
- - The reference compiler treats `^` as an unknown character, hence, when this character is encountered, the reference compiler will treat this as a warning instead of errors
- - The scanner in this repository treats the `^` as an error since it is the `XOR` bitwise operator. The reason for this is to keep the consistency in outputing error messages that match with the `AND` and `OR` bitwise operators. 
+```
+func main() {
+    prints("hello world")
+}
+```
 
- Function documentations can be found in `.h` files for shared functions
- Static (non-shared) function documentations are found in the source files. For ease of readability, all static functions are declared at the top of `.c` files
+will result in the following assembly code to be generated (please note that since packages have to be imported in `Go` for `Println` to work, `GoLF` has a small alternative to use a newly defined function called `prints()` to print a string instead, in order to simplify this project from having external dependencies):
+
+```
+        .data
+        Ltrue = 1
+        Lfalse = 0
+input:
+        .space 2
+        .align 2
+Strue:
+        .asciiz"true"
+Sfalse:
+        .asciiz"false"
+        .text
+        .globl main
+F_printb:
+        move $t0,$a0
+        beqz $t0,Sfalse_print
+        la $a0,Strue
+        addi $v0, $0, 4
+        syscall
+        jr $ra
+Sfalse_print:
+        la $a0,Sfalse
+        addi $v0, $0, 4
+        syscall
+        jr $ra
+F_printc:
+        addi $v0, $0, 11
+        syscall
+        jr $ra
+F_printi:
+        addi $v0, $0, 1
+        syscall
+        jr $ra
+F_prints:
+        addi $v0, $0, 4
+        syscall
+        jr $ra
+F_getchar:
+        addi $sp,$sp,-4
+        sw $ra,0($sp)
+        li $v0,8
+        la $a0,input
+        li $a1,2
+        syscall
+        lb $v0,input
+        bne $v0,$zero,ret
+        li $v0,-1
+ret:
+        lw $ra,0($sp)
+        addi $sp,$sp,4
+        jr $ra
+F_divmodchk:
+        beqz $a1,E_div_by_z
+        seq $s0,$a0,-2147483648
+        beqz $s0,L0
+        seq $s0,$a1,-1
+        beqz $s0,L0
+        li $a1,1
+L0:
+        move $v0,$a1
+        jr $ra
+E_div_by_z:
+        la $s0,S1
+        move $a0,$s0
+        jal F_prints
+        j F_halt_err
+E_must_return:
+        la $s0,S2
+        move $a0,$s0
+        jal F_prints
+        j F_halt_err
+F_len:
+        li $s0,0
+F_len_loop:
+        lb $s1,0($a0)
+        beqz $s1,F_len_loop_done
+        addi $a0,$a0,1
+        addi $s0,$s0,1
+        j F_len_loop
+F_len_loop_done:
+        move $v0,$s0
+        jr $ra
+main:
+        subu $sp,$sp,4
+        sw $ra,0($sp)
+        la $t0,S3
+        move $a0,$t0
+        jal F_prints
+FR_main:
+        lw $ra,0($sp)
+        addu $sp,$sp,4
+        jr $ra
+        j F_halt
+F_halt:
+        addi $v0, $0, 10
+        syscall
+F_halt_err:
+        li $a0,1
+        addi $v0, $0, 17
+        syscall
+        .data
+S0:
+        .byte 0
+S1:
+        .asciiz"error: division by zero\n"
+S2:
+        .asciiz"error: function must return a value\n"
+S3:
+        .byte 104
+        .byte 101
+        .byte 108
+        .byte 108
+        .byte 111
+        .byte 32
+        .byte 119
+        .byte 111
+        .byte 114
+        .byte 108
+        .byte 100
+        .byte 0
+```
