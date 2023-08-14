@@ -1,6 +1,6 @@
-Run started on Tue Mar 21 17:39:44 2023
+Run started on Tue Apr 11 19:10:57 2023
 
-Hostname: linux11-ea.cs.ucalgary.ca
+Hostname: linux08-ed.cs.ucalgary.ca
 
 -------------------------------------------------------------------------------
 Running make |
@@ -14,7 +14,7 @@ gcc -Wall -o golf *.c
 
 
 STDERR:
-parser.y: warning: 44 shift/reduce conflicts [-Wconflicts-sr]
+parser.y: warning: 78 shift/reduce conflicts [-Wconflicts-sr]
 parser.y: warning: 1 reduce/reduce conflict [-Wconflicts-rr]
 parser.y: note: rerun with option '-Wcounterexamples' to generate conflict counterexamples
 
@@ -73,58 +73,21 @@ nonexistent file
 RETURN CODE: 1
 
 -------------------------------------------------------------------------------
-Test: later global "int" redeclaration |
-----------------------------------------
+Test: hello, world |
+--------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t1
-
-STDOUT:
-
+% ./golf /home/profs/aycock/411/TEST/final/gen.t1 > out.s
 
 STDERR:
-error: expected type, got 'int' at or near line 4
 
 
-RETURN CODE: 1
+RETURN CODE: 0
 
--------------------------------------------------------------------------------
-Test: global var declaration loop |
------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t2
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
-
-
-STDERR:
-error: expected type, got 'int' at or near line 4
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: local var version of check.t2 |
--------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t3
-
-STDOUT:
-program sym=0x23937e0
-	func sym=0x2393870 @ line 4
-		newid [main] @ line 4
-		sig
-			formals
-			typeid [$void] sig=void sym=0x2388590 @ line 4
-		block
-			var sym=0x2393940 @ line 5
-				newid [int] @ line 5
-				typeid [int] sig=int sym=0x23885f0 @ line 5
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0x23889c0 @ line 6
-					actuals
-						id [int] sig=int sym=0x2393940 @ line 6
-
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+Hello, world!
 
 
 STDERR:
@@ -133,66 +96,29 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: global name test |
-------------------------
+Test: var init in loop block |
+------------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t4
+% ./golf /home/profs/aycock/411/TEST/final/gen.t2 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
-program sym=0xbb5f90
-	globalvar sym=0xbb6020 @ line 3
-		newid [b4int] @ line 3
-		typeid [int] sig=int sym=0xbb3d60 @ line 3
-	func sym=0xbb60b0 @ line 5
-		newid [b4func] @ line 5
-		sig
-			formals
-			typeid [$void] sig=void sym=0xbb3d00 @ line 5
-		block
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0xbb4130 @ line 6
-					actuals
-						id [b4int] sig=int sym=0xbb6020 @ line 6
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0xbb4130 @ line 7
-					actuals
-						id [aft3rint] sig=int sym=0xbb6260 @ line 7
-			exprstmt
-				funccall
-					id [aft3rfunc] sig=f() sym=0xbb61d0 @ line 8
-					actuals
-	func sym=0xbb6140 @ line 11
-		newid [main] @ line 11
-		sig
-			formals
-			typeid [$void] sig=void sym=0xbb3d00 @ line 11
-		block
-			exprstmt
-				funccall
-					id [b4func] sig=f() sym=0xbb60b0 @ line 12
-					actuals
-	func sym=0xbb61d0 @ line 15
-		newid [aft3rfunc] @ line 15
-		sig
-			formals
-			typeid [$void] sig=void sym=0xbb3d00 @ line 15
-		block
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0xbb4130 @ line 16
-					actuals
-						id [b4int] sig=int sym=0xbb6020 @ line 16
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0xbb4130 @ line 17
-					actuals
-						id [aft3rint] sig=int sym=0xbb6260 @ line 17
-	globalvar sym=0xbb6260 @ line 20
-		newid [aft3rint] @ line 20
-		typeid [int] sig=int sym=0xbb3d60 @ line 20
-
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+start of loop
+0
+start of loop
+0
+start of loop
+0
+start of loop
+0
+4
 
 
 STDERR:
@@ -201,88 +127,44 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: block scope check |
--------------------------
+Test: zero values |
+-------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t5
-
-STDOUT:
-
+% ./golf /home/profs/aycock/411/TEST/final/gen.t3 > out.s
 
 STDERR:
-error: number/type of arguments doesn't match function declaration at or near line 16
 
 
-RETURN CODE: 1
+RETURN CODE: 0
 
--------------------------------------------------------------------------------
-Test: global var declaration, complex loop |
---------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t6
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+global zero values: 
+false
+0
 
+local zero values: 
+false
+0
 
-STDERR:
-error: expected type, got 'bool' at or near line 3
+local zero values: 
+false
+0
 
+sub-block zero values: 
+false
+0
 
-RETURN CODE: 1
+sub-block zero values: 
+false
+0
 
--------------------------------------------------------------------------------
-Test: parameter scope test |
-----------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t7
-
-STDOUT:
-program sym=0x1143a80
-	func sym=0x1143b30 @ line 3
-		newid [foo] @ line 3
-		sig
-			formals
-				formal
-					newid [int] sig=int sym=0x1143df0 @ line 3
-					typeid [int] sig=int sym=0x113b860 @ line 3
-			typeid [int] sig=int sym=0x113b860 @ line 3
-		block
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0x1122720 @ line 4
-					actuals
-						id [int] sig=int sym=0x1143df0 @ line 4
-			return @ line 5
-				id [int] sig=int sym=0x1143df0 @ line 5
-	func sym=0x1143be0 @ line 8
-		newid [bar] @ line 8
-		sig
-			formals
-				formal
-					newid [bar] sig=int sym=0x1143ec0 @ line 8
-					typeid [int] sig=int sym=0x113b860 @ line 8
-			typeid [$void] sig=void sym=0x113b800 @ line 8
-		block
-			emptystmt
-	func sym=0x1143c90 @ line 11
-		newid [string] @ line 11
-		sig
-			formals
-				formal
-					newid [string] sig=int sym=0x1143f90 @ line 11
-					typeid [int] sig=int sym=0x113b860 @ line 11
-			typeid [bool] sig=bool sym=0x113b830 @ line 11
-		block
-			return @ line 12
-				id [true] sig=bool sym=0x113b9f0 @ line 12
-	func sym=0x1143d20 @ line 15
-		newid [main] @ line 15
-		sig
-			formals
-			typeid [$void] sig=void sym=0x113b800 @ line 15
-		block
-			emptystmt
-
+post-sub-block zero values: 
+true
+123
+garble
 
 
 STDERR:
@@ -291,387 +173,67 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: constants can't be changed |
-----------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t8
-
-STDOUT:
-
-
-STDERR:
-error: can't assign to a constant at or near line 4
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: nonexistent type name |
+Test: nested function calls |
 -----------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t9
+% ./golf /home/profs/aycock/411/TEST/final/gen.t4 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+2903040
 
 
 STDERR:
-error: Undefine reference to 'notthere' at or near line 3
 
 
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: type name not a type |
-----------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t10
-
-STDOUT:
-
-
-STDERR:
-error: expected type, got 't' at or near line 4
-
-
-RETURN CODE: 1
+RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: formal parameters need types |
-------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t11
-
-STDOUT:
-
-
-STDERR:
-error: expected type, got 'main' at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: multiple (main) functions, same name |
---------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t12
-
-STDOUT:
-
-
-STDERR:
-error: Redeclaration of 'main' at or near line 7
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: no main function |
-------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t13
-
-STDOUT:
-
-
-STDERR:
-error: missing main() function
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: main can't have arguments |
----------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t14
-
-STDOUT:
-
-
-STDERR:
-error: main() can't have arguments at or near line 3
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: main can't have a return value |
---------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t15
-
-STDOUT:
-
-
-STDERR:
-error: main() can't have a return value at or near line 3
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: dup check for formal parameters |
----------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t16
-
-STDOUT:
-
-
-STDERR:
-error: Redeclaration of 'i' at or near line 7
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: function call as lvalue |
--------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t17
-
-STDOUT:
-
-
-STDERR:
-error: can only assign to a variable at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: function name as lvalue |
--------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t18
-
-STDOUT:
-
-
-STDERR:
-error: operand type mismatch for '=' at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: humongous integer literal |
----------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t19
-
-STDOUT:
-
-
-STDERR:
-error: integer literal out of range at or near line 5
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: positive integer literal out of range |
----------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t20
-
-STDOUT:
-
-
-STDERR:
-error: integer literal too large at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: negative integer literal out of range |
----------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t21
-
-STDOUT:
-
-
-STDERR:
-error: integer literal too small at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: "break" not inside "for" loop |
--------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t22
-
-STDOUT:
-
-
-STDERR:
-error: break must be inside 'for' at or near line 7
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: "break" in block, but not in "for" |
-------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t23
-
-STDOUT:
-
-
-STDERR:
-error: break must be inside 'for' at or near line 5
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: "break" in "if" block |
------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t24
-
-STDOUT:
-
-
-STDERR:
-error: break must be inside 'for' at or near line 5
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: missing return statement |
---------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t25
-
-STDOUT:
-
-
-STDERR:
-error: no return statement in function at or near line 6
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: returning value from void function |
-------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t26
-
-STDOUT:
-
-
-STDERR:
-error: returned value has the wrong type at or near line 4
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: return type mismatch |
-----------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t27
-
-STDOUT:
-
-
-STDERR:
-error: returned value has the wrong type at or near line 7
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: missing return type |
+Test: recursive Fibonacci |
 ---------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t28
-
-STDOUT:
-
+% ./golf /home/profs/aycock/411/TEST/final/gen.t5 > out.s
 
 STDERR:
-error: this function must return a value at or near line 7
 
 
-RETURN CODE: 1
+RETURN CODE: 0
 
--------------------------------------------------------------------------------
-Test: "if" expr not a boolean type |
-------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t29
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
-
-
-STDERR:
-error: if expression must be boolean type at or near line 4
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: "if"-"else" not a boolean type |
---------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t30
-
-STDOUT:
-
-
-STDERR:
-error: ifelse expression must be boolean type at or near line 4
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: "for" expr not a boolean type |
--------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t31
-
-STDOUT:
-
-
-STDERR:
-error: for expression must be boolean type at or near line 10
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: legit expression statements |
------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t32
-
-STDOUT:
-program sym=0x1accf90
-	func sym=0x1acd020 @ line 3
-		newid [main] @ line 3
-		sig
-			formals
-			typeid [$void] sig=void sym=0x1ac3570 @ line 3
-		block
-			var sym=0x1acd0f0 @ line 4
-				newid [i] @ line 4
-				typeid [int] sig=int sym=0x1ac35d0 @ line 4
-			exprstmt @ line 5
-				id [i] sig=int sym=0x1acd0f0 @ line 5
-			exprstmt @ line 6
-				int [42] @ line 6
-
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+fib(10) = 55
+fib(11) = 89
+fib(12) = 144
+fib(13) = 233
+fib(14) = 377
+fib(15) = 610
+fib(16) = 987
+fib(17) = 1597
+fib(18) = 2584
+fib(19) = 4181
+fib(20) = 6765
+fib(21) = 10946
+fib(22) = 17711
+fib(23) = 28657
 
 
 STDERR:
@@ -680,52 +242,67 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: built-in routine check |
-------------------------------
+Test: iterative Fibonacci |
+---------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t33
+% ./golf /home/profs/aycock/411/TEST/final/gen.t6 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
-program sym=0x14d6fd0
-	func sym=0x14d7060 @ line 3
-		newid [main] @ line 3
-		sig
-			formals
-			typeid [$void] sig=void sym=0x14b9600 @ line 3
-		block
-			exprstmt
-				funccall
-					id [prints] sig=f(string) sym=0x14b9ac0 @ line 4
-					actuals
-						string [Hello, world!\n] @ line 4
-			exprstmt
-				funccall
-					id [printb] sig=f(bool) sym=0x14b9910 @ line 5
-					actuals
-						id [true] sig=bool sym=0x14b97f0 @ line 5
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0x14b9a30 @ line 6
-					actuals
-						int [123] @ line 6
-			exprstmt
-				funccall
-					id [printc] sig=f(int) sym=0x14b99a0 @ line 7
-					actuals
-						int [123] @ line 7
-			var sym=0x14d7130 @ line 8
-				newid [ch] @ line 8
-				typeid [int] sig=int sym=0x14b9660 @ line 8
-			= sym=0x14d6810 sig=int @ line 9
-				id [ch] sig=int sym=0x14d7130 @ line 9
-				funccall
-					id [getchar] sig=f() sym=0x14b9b50 @ line 9
-					actuals
-			exprstmt
-				funccall
-					id [halt] sig=f() sym=0x14b9be0 @ line 10
-					actuals
-
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+fib(10) = 55
+fib(11) = 89
+fib(12) = 144
+fib(13) = 233
+fib(14) = 377
+fib(15) = 610
+fib(16) = 987
+fib(17) = 1597
+fib(18) = 2584
+fib(19) = 4181
+fib(20) = 6765
+fib(21) = 10946
+fib(22) = 17711
+fib(23) = 28657
+fib(24) = 46368
+fib(25) = 75025
+fib(26) = 121393
+fib(27) = 196418
+fib(28) = 317811
+fib(29) = 514229
+fib(30) = 832040
+fib(31) = 1346269
+fib(32) = 2178309
+fib(33) = 3524578
+fib(34) = 5702887
+fib(35) = 9227465
+fib(36) = 14930352
+fib(37) = 24157817
+fib(38) = 39088169
+fib(39) = 63245986
+fib(40) = 102334155
+fib(41) = 165580141
+fib(42) = 267914296
+fib(43) = 433494437
+fib(44) = 701408733
+fib(45) = 1134903170
+fib(46) = 1836311903
 
 
 STDERR:
@@ -734,168 +311,97 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: actual parameter type check |
------------------------------------
+Test: string reversal |
+-----------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t34
+% ./golf /home/profs/aycock/411/TEST/final/gen.t7 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s < /home/profs/aycock/411/TEST/final/input/gen.t7.in
+
+STDIN:
+A man, a plan, a canal: Panama.
+
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+.amanaP :lanac a ,nalp a ,nam A
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: hunting minint |
+----------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t8 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+minint is -2147483648
 
 
 STDERR:
-error: number/type of arguments doesn't match function declaration at or near line 4
 
 
-RETURN CODE: 1
+RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: operand type mismatch |
------------------------------
+Test: negating minint |
+-----------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t35
+% ./golf /home/profs/aycock/411/TEST/final/gen.t9 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+-123
+-2147483648
+-2147483648
+-2147483648
 
 
 STDERR:
-error: operand type mismatch for '+' at or near line 10
 
 
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: another actual parameter type check |
--------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t36
-
-STDOUT:
-
-
-STDERR:
-error: number/type of arguments doesn't match function declaration at or near line 7
-
-
-RETURN CODE: 1
+RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: return+argument checks |
-------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t37
-
-STDOUT:
-
-
-STDERR:
-error: number/type of arguments doesn't match function declaration at or near line 8
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: scope check and undefined variable |
-------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t38
-
-STDOUT:
-
-
-STDERR:
-error: Undefine reference to 'c' at or near line 10
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: redefined variable |
+Test: minint div and mod |
 --------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t39
-
-STDOUT:
-
+% ./golf /home/profs/aycock/411/TEST/final/gen.t10 > out.s
 
 STDERR:
-error: Redeclaration of 'a' at or near line 8
 
 
-RETURN CODE: 1
+RETURN CODE: 0
 
--------------------------------------------------------------------------------
-Test: comparable and ordered comparisons |
-------------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t40
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
-
-
-STDERR:
-error: operand type mismatch for '>' at or near line 8
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: int/bool distinction |
-----------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t41
-
-STDOUT:
-
-
-STDERR:
-error: operand type mismatch for '=' at or near line 5
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: deep type propagation |
------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t42
-
-STDOUT:
-
-
-STDERR:
-error: syntax error on "&&" at or near line 8
-
-
-RETURN CODE: 1
-
--------------------------------------------------------------------------------
-Test: redefining "true" and "false" |
--------------------------------------
-
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t43
-
-STDOUT:
-program sym=0x160c320
-	globalvar sym=0x160c3b0 @ line 3
-		newid [true] @ line 3
-		typeid [int] sig=int sym=0x15fe6e0 @ line 3
-	func sym=0x160c440 @ line 5
-		newid [main] @ line 5
-		sig
-			formals
-			typeid [$void] sig=void sym=0x15fe680 @ line 5
-		block
-			var sym=0x160c510 @ line 6
-				newid [false] @ line 6
-				typeid [int] sig=int sym=0x15fe6e0 @ line 6
-			exprstmt
-				funccall
-					id [printi] sig=f(int) sym=0x15feab0 @ line 7
-					actuals
-						* sym=0x160bec0 sig=int @ line 7
-							id [true] sig=int sym=0x160c3b0 @ line 7
-							id [false] sig=int sym=0x160c510 @ line 7
-
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+-2147483648
+0
 
 
 STDERR:
@@ -904,34 +410,524 @@ STDERR:
 RETURN CODE: 0
 
 -------------------------------------------------------------------------------
-Test: call of non-function |
-----------------------------
+Test: division by zero |
+------------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t44
+% ./golf /home/profs/aycock/411/TEST/final/gen.t11 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+error: division by zero
 
 
 STDERR:
-error: can't call something that isn't a function at or near line 4
 
 
 RETURN CODE: 1
 
 -------------------------------------------------------------------------------
-Test: type id used in wrong context |
--------------------------------------
+Test: basic Booleans |
+----------------------
 
-% ./golf /home/profs/aycock/411/TEST/ms3/check.t45
+% ./golf /home/profs/aycock/411/TEST/final/gen.t12 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
 
 STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+OK
 
 
 STDERR:
-error: Can't use type 'int' for assignment at or near line 5
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: string escapes |
+----------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t13 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+backslash b = []
+backslash t = [	]
+backslash n = [
+]
+backslash f = []
+backslash r = []
+backslash quote = ["]
+backslash backslash = [\]
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: all your base are belong to us |
+--------------------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t14 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+0 = 
+	0 (base 2)
+	0 (base 8)
+	0 (base 10)
+17 = 
+	010001 (base 2)
+	021 (base 8)
+	017 (base 10)
+42 = 
+	0101010 (base 2)
+	052 (base 8)
+	042 (base 10)
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: short-circuiting |
+------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t15 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+if ((A && B) || C) {...} else {...}, with A=false B=false C=false
+evaluated A
+evaluated C
+else-part executed
+
+if ((A && B) || C) {...} else {...}, with A=false B=false C=true
+evaluated A
+evaluated C
+if-part executed
+
+if ((A && B) || C) {...} else {...}, with A=false B=true C=false
+evaluated A
+evaluated C
+else-part executed
+
+if ((A && B) || C) {...} else {...}, with A=false B=true C=true
+evaluated A
+evaluated C
+if-part executed
+
+if ((A && B) || C) {...} else {...}, with A=true B=false C=false
+evaluated A
+evaluated B
+evaluated C
+else-part executed
+
+if ((A && B) || C) {...} else {...}, with A=true B=false C=true
+evaluated A
+evaluated B
+evaluated C
+if-part executed
+
+if ((A && B) || C) {...} else {...}, with A=true B=true C=false
+evaluated A
+evaluated B
+if-part executed
+
+if ((A && B) || C) {...} else {...}, with A=true B=true C=true
+evaluated A
+evaluated B
+if-part executed
+
+x = (A && !B) || C, with A=false B=false C=false
+evaluated A
+evaluated C
+x=false
+
+x = (A && !B) || C, with A=false B=false C=true
+evaluated A
+evaluated C
+x=true
+
+x = (A && !B) || C, with A=false B=true C=false
+evaluated A
+evaluated C
+x=false
+
+x = (A && !B) || C, with A=false B=true C=true
+evaluated A
+evaluated C
+x=true
+
+x = (A && !B) || C, with A=true B=false C=false
+evaluated A
+evaluated B
+x=true
+
+x = (A && !B) || C, with A=true B=false C=true
+evaluated A
+evaluated B
+x=true
+
+x = (A && !B) || C, with A=true B=true C=false
+evaluated A
+evaluated B
+evaluated C
+x=false
+
+x = (A && !B) || C, with A=true B=true C=true
+evaluated A
+evaluated B
+evaluated C
+x=true
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: dynamic semantic check |
+------------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t16 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+error: function must return a value
+
+
+STDERR:
 
 
 RETURN CODE: 1
 
-Run ended on Tue Mar 21 17:39:44 2023
+-------------------------------------------------------------------------------
+Test: less obvious division by zero |
+-------------------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t17 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+error: division by zero
+
+
+STDERR:
+
+
+RETURN CODE: 1
+
+-------------------------------------------------------------------------------
+Test: recursive-descent calculator |
+------------------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t18 > out.s
+
+STDERR:
+
+
+*** TERMINATION VIA SIGNAL: Segmentation fault
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: string operations |
+-------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t19 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+zero value: len("") = 0, correct answer is 0
+empty string: len("") = 0, correct answer is 0
+var assigned empty string: len("") = 0, correct answer is 0
+yawn: len("boring string") = 13, correct answer is 13
+string with \n: len("Hello, world!
+") = 14, correct answer is 14
+silly string: len("\"escape th	n(") = 16, correct answer is 16
+HEarth
+Hello, world!
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+correct
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: redefining built-ins |
+----------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t20 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+5
+garble
+true
+false
+true
+false
+Why you'd want to do this, I have no idea...
+untrue
+true
+42
+IT CAN'T BE STOPPED!
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: register blow-out |
+-------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t21 > out.s
+
+STDERR:
+error: expression too complicated
+
+
+RETURN CODE: 1
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: nested "for" loops |
+--------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t22 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+0
+100 101 102 103 104 105 
+1
+100 101 102 103 104 105 
+2
+100 101 102 103 104 105 
+3
+100 101 102 103 104 105 
+4
+100 101 102 103 104 105 
+5
+100 101 102 103 104 105 
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: EOF and scope |
+---------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t23 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s < /home/profs/aycock/411/TEST/final/input/gen.t23.in
+
+STDIN:
+The quick brown fox jumps over the lazy dog.
+
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+The quick brown fox jumps over the lazy dog.
+
+END
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: banners |
+---------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t24 > out.s
+
+STDERR:
+syntax error, unexpected (, expecting { at line 48
+
+
+RETURN CODE: 1
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: div and mod table |
+-------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.t25 > out.s
+
+STDERR:
+
+
+RETURN CODE: 0
+
+% /home/profs/aycock/411/bin/spim -file out.s
+
+STDOUT:
+Loaded: /home/profs/aycock/411/sw/share/spim/exceptions.s
+x	y	x / y	x % y
+5	3	1	2
+-5	3	-1	-2
+5	-3	-1	2
+-5	-3	1	-2
+
+
+STDERR:
+
+
+RETURN CODE: 0
+
+-------------------------------------------------------------------------------
+Test: basic maze generation from Entombed (1982) |
+--------------------------------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.entombed > out.s
+
+STDERR:
+
+
+*** TERMINATION VIA SIGNAL: Segmentation fault
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: the Game of Life |
+------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.life > out.s
+
+STDERR:
+
+
+*** TERMINATION VIA SIGNAL: Segmentation fault
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: selection sort |
+----------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.select > out.s
+
+STDERR:
+
+
+*** TERMINATION VIA SIGNAL: Segmentation fault
+
+(GoLF compiler unsuccessful, skipping test)
+
+-------------------------------------------------------------------------------
+Test: prime number sieve |
+--------------------------
+
+% ./golf /home/profs/aycock/411/TEST/final/gen.sieve > out.s
+
+STDERR:
+
+
+*** TERMINATION VIA SIGNAL: Segmentation fault
+
+(GoLF compiler unsuccessful, skipping test)
+
+Run ended on Tue Apr 11 19:11:05 2023
 

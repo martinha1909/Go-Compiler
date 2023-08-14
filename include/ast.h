@@ -3,12 +3,15 @@
 #include <string.h>
 #include "token.h"
 #include "semantics.h"
+#include "asm_code_gen.h"
 
 #define AST_NODE_MAX_NUM                2048
 #define AST_NODE_NAME_MAX_LEN           TOKEN_LEXEME_MAX_LEN
 
 #define AST_FUNC_SIG_MAX_CHILDREN       2
 #define AST_MATH_EXPR_MAX_CHILDREN      2
+
+typedef struct asm_tmp_reg asm_tmp_reg_t;
 
 typedef enum ast_node_type_e {
     AST_NODE_NONE = 0,
@@ -77,6 +80,8 @@ typedef struct ast_parse_info {
 typedef struct ast_node {
     ast_parse_info_t* node_info;
     semantics_stab_record_t* symbol_loc;
+    asm_tmp_reg_t* memory_reg;
+    int num_local_var;
     ast_node_type_t type;
     int num_children;
     struct ast_node **children;
@@ -89,12 +94,19 @@ typedef struct ast_start {
     ast_node_t** nodes;
 } ast_start_t;
 
+typedef struct ast_node_list {
+    ast_node_t** nodes;
+    int size;
+} ast_node_list_t;
+
+void ast_node_list_append(ast_node_list_t* list, ast_node_t* item);
 int ast_init();
 void ast_prune(ast_node_t** nodes, int num_children);
 char* ast_str_node_type(ast_node_type_t node_type);
 void ast_node_collection_append(ast_node_t* node);
 void ast_repete_rules_nodes_append(ast_node_t* node);
 void ast_assembled_nodes_append(ast_node_t* node);
+void ast_assembled_nodes_add_to_parent(ast_node_t* parent);
 void ast_add_node(ast_node_t* node);
 ast_node_t* ast_node_alloc(ast_parse_info_t* node_info,
                            ast_node_type_t node_type,

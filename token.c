@@ -12,6 +12,8 @@ static token_t _tokens[TOKEN_MAX_NUM];
 static token_t *_token_ref = NULL;
 static token_type_t _curr_tok_type;
 
+static void _add_token(token_type_t token_type);
+
 static void _token_ref_dealloc()
 {
     if (_token_ref != NULL) {
@@ -322,6 +324,10 @@ static void _add_id_token()
     while (1) {
         _ch = (char)fgetc(_fp);
 
+        if (_ch == '\r') {
+            continue;
+        }
+
         if (_ch == '\n' || 
             _ch == EOF || 
             _ch == ' ' || 
@@ -329,6 +335,7 @@ static void _add_id_token()
             _ch == '(' || 
             _ch == ')' ||
             _ch == '-' ||
+            _ch == '+' ||
             _ch == ',' ||
             _ch == ';' ||
             _ch == '\t') {
@@ -357,14 +364,19 @@ static void _add_id_token()
     } else if (_ch == '"' || 
                _ch == '(' || 
                _ch == ',' || 
-               _ch == ')' || 
-               _ch == '-' ||
+               _ch == ')' ||
                _ch == ';') {
         fseek(_fp, -1, SEEK_CUR);
     }
 
     if (!semi_colon_added) {
         _num_tokens++;
+    }
+
+    if (_ch == '+') {
+        _add_token(TOKEN_TYPE_ADD);
+    } else if (_ch == '-') {
+        _add_token(TOKEN_TYPE_SUB);
     }
 }
 

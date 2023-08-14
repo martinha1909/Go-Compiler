@@ -1,14 +1,8 @@
-# Go-Compiler
+# CPSC411Project
 
-This project compiles a fragment of the Go programming language and output MIPS assembly to `stdout`. 
+Run `make` in the root directory of this project, which will create the `golf` binary executable. 
 
-Commits from this project was done in a private repository and recently made public. Hence, this repository was imported from that private repository and therefore no commit history can be found
-
-# Build
-
-Run `make` in the root directory of this project, which will create a binary executable. The binary is called `golf`, which is short for Go Language Fragment
-
-This `golf` executable takes in 1 input, which is the path of an input file and will print MIPS assembly code to `stdout` (or use the direct stream output to a file to create an assembly file (i.e `./golf input_file > output_file.s`)).  
+This `golf` executable takes in 1 input, which is the path of an input file for scanning. 
 
 ## Lay out of the repository
 

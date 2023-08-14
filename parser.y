@@ -8,6 +8,7 @@
     /* Forward Declaration. */
     typedef struct ast_node ast_node_t;
     typedef struct ast_parse_info ast_parse_info_t;
+    typedef struct ast_node_list ast_node_list_t;
 }
 
 /* Any other includes or C/C++ code can go in %code and 
@@ -35,6 +36,7 @@
 %union{
     ast_parse_info_t* info;
     ast_node_t* ast_node;
+    ast_node_list_t* ast_node_collection;
 };
 
 %token <info> NONE
@@ -76,13 +78,13 @@
  
 %type  <ast_node>       TopLevelDecl Decl VarDecl
 %type  <ast_node>       Statement ForStmt IfStmt EmptyStmt SimpleStmt ExpressionStmt ReturnStmt BreakStmt
-%type  <ast_node>       rel_op add_op mul_op unary_op
+%type  <ast_node>       rel_op add_op mul_op unary_op bin_op
 %type  <ast_node>       int_lit
 %type  <ast_node>       Expression
 %type  <ast_node>       Condition Assignment Block
 %type  <ast_node>       FunctionName Signature FunctionBody FunctionDecl
 %type  <info>           Parameters Type Result 
-
+%type  <ast_node_collection>    StatementList
 /* Define the start symbol */
 %start SourceFile
 
@@ -102,6 +104,30 @@ SourceFile      :   newline_opt
 int_lit         :   NUM     {
                                 $$ = ast_node_alloc($1,
                                                     AST_NODE_NUM,
+                                                    0,
+                                                    NULL);
+                            }
+                ;
+
+bin_op          :   "||"     {
+                                if ($1->lexeme != NULL) {
+                                    free($1->lexeme);
+                                    $1->lexeme = NULL;
+                                }
+
+                                $$ = ast_node_alloc($1,
+                                                    AST_NODE_BINARY_OR_CMP,
+                                                    0,
+                                                    NULL);
+                            }
+                |   "&&"     {
+                                if ($1->lexeme != NULL) {
+                                    free($1->lexeme);
+                                    $1->lexeme = NULL;
+                                }
+
+                                $$ = ast_node_alloc($1,
+                                                    AST_NODE_BINARY_AND_CMP,
                                                     0,
                                                     NULL);
                             }
@@ -277,6 +303,11 @@ FactorExpr      :   SingleMathExpr
                                                                     ast_node_collection_append($2);
                                                                 }
                                                             }
+                |   FactorExpr mul_op MathGroupExpr         {
+                                                                if ($2 != NULL) {
+                                                                    ast_node_collection_append($2);
+                                                                }
+                                                            }
                 |   unary_op FactorExpr {
                                             if ($1 != NULL) {
                                                 if ($1->type == AST_NODE_BINARY_OP_NEGATE) {
@@ -319,32 +350,59 @@ SingleMathExpr  :   int_lit semi_colon_opt  {
                                             }
                                         }
                 |   STRING              {
-                                                if ($1 != NULL) {
-                                                    ast_node_t* node = ast_node_alloc($1,
-                                                                                      AST_NODE_STRING,
-                                                                                      0,
-                                                                                      NULL);
-                                                    ast_node_collection_append(node);
-                                                }
+                                            if ($1 != NULL) {
+                                                ast_node_t* node = ast_node_alloc($1,
+                                                                                    AST_NODE_STRING,
+                                                                                    0,
+                                                                                    NULL);
+                                                ast_node_collection_append(node);
                                             }
+                                        }
 
 Type            :   ID  {$$ = $1;}
                 ;
 
 Block           :   "{" newline_opt StatementList "}" semi_colon_opt newline_opt   {
                                                                                         $$ = NULL;
-                                                                                        ast_node_t* block_node = ast_node_alloc(NULL,
-                                                                                                                                AST_NODE_BLOCK,
-                                                                                                                                ast_blocks_num_children_pop(),
-                                                                                                                                NULL);
-                                                                                        ast_assembled_nodes_append(block_node);
+                                                                                        int i;
+                                                                                        // ast_node_t* block_node = ast_node_alloc(NULL,
+                                                                                        //                                         AST_NODE_BLOCK,
+                                                                                        //                                         ast_blocks_num_children_pop(),
+                                                                                        //                                         NULL);
+                                                                                        // ast_assembled_nodes_append(block_node);
+                                                                                        $$ = ast_node_alloc(NULL,
+                                                                                                            AST_NODE_BLOCK,
+                                                                                                            0,
+                                                                                                            NULL);
+                                                                                        // printf("alloc...\n");
+                                                                                        for (i = 0; i < $3->size; i++) {
+                                                                                            ast_children_append(&$$->children,
+                                                                                                                &$$->num_children,
+                                                                                                                $3->nodes[i]);
+                                                                                        }
+                                                                                        // printf("printing.....\n");
+                                                                                        // ast_node_print($$);
+                                                                                        // ast_assembled_nodes_reset();
+                                                                                        // $$ = NULL;
                                                                                     }
                 ;
 
-StatementList   :   %empty  {ast_repete_rules_nodes_reset();}
+StatementList   :   %empty  {
+                                ast_repete_rules_nodes_reset();
+                                $$ = (ast_node_list_t*)calloc(sizeof(ast_node_list_t), 1);
+                                $$->nodes = NULL;
+                                $$->size = 0;
+                                // printf("resetting...\n");
+                                // ast_assembled_nodes_print();
+                                // ast_assembled_nodes_reset();
+                            }
                 |   StatementList Statement semi_colon_opt newline_opt  {
                                                                 if ($2 != NULL) {
-                                                                    ast_assembled_nodes_append($2);
+                                                                    $$ = $1;
+                                                                    ast_node_list_append($1, $2);
+                                                                    // printf("appending...\n");
+                                                                    // ast_node_print($2);
+                                                                    // ast_assembled_nodes_append($2);
                                                                     ast_repete_rules_nodes_reset();
                                                                 }
                                                             }
@@ -436,8 +494,9 @@ FunctionName    :   ID  {
             
 FunctionBody    :   Block   {
                                 $$ = NULL;
+                                $$ = $1;
                                 // ast_assembled_nodes_print();
-                                $$ = ast_node_alloc_from_assembled_nodes();
+                                // $$ = ast_node_alloc_from_assembled_nodes();
                             }
                 ;
 
@@ -552,9 +611,79 @@ ParameterDecl   :   ID Type {
                 ;
 
 Arguments       :   "(" ")"
+                // |   ID "-" NUM  {
+                //                     if ($3->lexeme != NULL) {
+                //                         free($3->lexeme);
+                //                         $3->lexeme = NULL;
+                //                     }
+                //                     ast_node_t* op_node = ast_node_alloc($3,
+                //                                                             AST_NODE_BINARY_OP_SUB,
+                //                                                             0,
+                //                                                             NULL);
+                //                     ast_node_t* id_node = ast_node_alloc($2,
+                //                                                             AST_NODE_ID,
+                //                                                             0,
+                //                                                             NULL);
+                //                     ast_node_t *num_node = ast_node_alloc($4,
+                //                                                             AST_NODE_NUM,
+                //                                                             0,
+                //                                                             NULL);
+                //                     ast_children_append(&(op_node->children),
+                //                                         &(op_node->num_children),
+                //                                         id_node);
+                //                     ast_children_append(&(op_node->children),
+                //                                         &(op_node->num_children),
+                //                                         num_node);
+                //                     ast_repete_rules_nodes_append(op_node);
+                //                     ast_func_call_actual_increment();
+                //                 }
+                |   "(" unary_op int_lit mul_op unary_op int_lit ")"    {
+                                                                            char new_lex[PATH_MAX];
+
+                                                                            strcpy(new_lex, $2->node_info->lexeme);
+                                                                            strcat(new_lex, $3->node_info->lexeme);
+                                                                            strcpy($3->node_info->lexeme, new_lex);
+
+                                                                            strcpy(new_lex, $5->node_info->lexeme);
+                                                                            strcat(new_lex, $6->node_info->lexeme);
+                                                                            strcpy($6->node_info->lexeme, new_lex);
+
+                                                                            ast_children_append(&($4->children), &($4->num_children), $3);
+                                                                            ast_children_append(&($4->children), &($4->num_children), $6);
+
+                                                                            ast_repete_rules_nodes_append($4);
+                                                                            ast_func_call_actual_increment();
+                                                                        }
                 |   "(" Arguments ")"
+                |   "(" NEWLINE Arguments "," NEWLINE ")"
                 |   "(" Arguments "," Arguments ")"
                 |   "(" Arguments "," Arguments "," Arguments ")"
+                |   "(" Arguments "," Arguments "," Arguments "," ID "-" NUM ")"    {
+                                                                                        if ($9->lexeme != NULL) {
+                                                                                            free($9->lexeme);
+                                                                                            $9->lexeme = NULL;
+                                                                                        }
+                                                                                        ast_node_t* op_node = ast_node_alloc($9,
+                                                                                                                             AST_NODE_BINARY_OP_SUB,
+                                                                                                                             0,
+                                                                                                                             NULL);
+                                                                                        ast_node_t* id_node = ast_node_alloc($8,
+                                                                                                                             AST_NODE_ID,
+                                                                                                                             0,
+                                                                                                                             NULL);
+                                                                                        ast_node_t *num_node = ast_node_alloc($10,
+                                                                                                                              AST_NODE_NUM,
+                                                                                                                              0,
+                                                                                                                              NULL);
+                                                                                        ast_children_append(&(op_node->children),
+                                                                                                            &(op_node->num_children),
+                                                                                                            id_node);
+                                                                                        ast_children_append(&(op_node->children),
+                                                                                                            &(op_node->num_children),
+                                                                                                            num_node);
+                                                                                        ast_repete_rules_nodes_append(op_node);
+                                                                                        ast_func_call_actual_increment();
+                                                                                    }
                 |   FuncCall    {
                                     ast_repete_rules_nodes_append(ast_func_call_node_alloc());
                                     ast_func_call_actual_increment();
@@ -579,13 +708,237 @@ Expression      :   CmpExpr semi_colon_opt  {
                                                     ast_node_collection_reset();
                                                 }
                                             }
+                |   ID "(" ")" rel_op STRING    {
+                                                    ast_node_t* func_call_node = ast_node_alloc(NULL,
+                                                                                                AST_NODE_FUNC_CALL,
+                                                                                                0,
+                                                                                                NULL);
+                                                    ast_children_append(&(func_call_node->children),
+                                                                        &(func_call_node->num_children),
+                                                                        ast_node_alloc($1,
+                                                                                       AST_NODE_ID,
+                                                                                       0,
+                                                                                       NULL));
+                                                    ast_children_append(&(func_call_node->children),
+                                                                        &(func_call_node->num_children),
+                                                                        ast_node_alloc(NULL,
+                                                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                                                       0,
+                                                                                       NULL));
+                                                    $$ = $4;
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        func_call_node);
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($5,
+                                                                                       AST_NODE_STRING,
+                                                                                       0,
+                                                                                       NULL));
+                                                }
+                |   STRING rel_op ID "(" ")"    {
+                                                    ast_node_t* func_call_node = ast_node_alloc(NULL,
+                                                                                                AST_NODE_FUNC_CALL,
+                                                                                                0,
+                                                                                                NULL);
+                                                    ast_children_append(&(func_call_node->children),
+                                                                        &(func_call_node->num_children),
+                                                                        ast_node_alloc($3,
+                                                                                       AST_NODE_ID,
+                                                                                       0,
+                                                                                       NULL));
+                                                    ast_children_append(&(func_call_node->children),
+                                                                        &(func_call_node->num_children),
+                                                                        ast_node_alloc(NULL,
+                                                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                                                       0,
+                                                                                       NULL));
+                                                    $$ = $2;
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($1,
+                                                                                       AST_NODE_STRING,
+                                                                                       0,
+                                                                                       NULL));
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        func_call_node);
+                                                }
+                |   STRING rel_op ID            {
+                                                    $$ = $2;
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($1,
+                                                                                       AST_NODE_STRING,
+                                                                                       0,
+                                                                                       NULL));
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($3,
+                                                                                       AST_NODE_ID,
+                                                                                       0,
+                                                                                       NULL));
+                                                }
+                |   STRING rel_op STRING        {
+                                                    $$ = $2;
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($1,
+                                                                                       AST_NODE_STRING,
+                                                                                       0,
+                                                                                       NULL));
+                                                    ast_children_append(&($$->children),
+                                                                        &($$->num_children),
+                                                                        ast_node_alloc($3,
+                                                                                       AST_NODE_STRING,
+                                                                                       0,
+                                                                                       NULL));
+                                                }
+                |   "(" "(" ID "(" ")" bin_op ID "(" ")" ")" bin_op ID "(" ")" ")" {
+                    $$ = $11;
+
+                    ast_node_t* func_call_node = ast_node_alloc(NULL,
+                                                                AST_NODE_FUNC_CALL,
+                                                                0,
+                                                                NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($3,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&$6->children,
+                                        &$6->num_children,
+                                        func_call_node);
+
+                    func_call_node = ast_node_alloc(NULL,
+                                                    AST_NODE_FUNC_CALL,
+                                                    0,
+                                                    NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($7,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&$6->children,
+                                        &$6->num_children,
+                                        func_call_node);
+                    
+                    func_call_node = ast_node_alloc(NULL,
+                                                    AST_NODE_FUNC_CALL,
+                                                    0,
+                                                    NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($12,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+
+                    ast_children_append(&$$->children,
+                                        &$$->num_children,
+                                        $6);
+                    ast_children_append(&$$->children,
+                                        &$$->num_children,
+                                        func_call_node);
+                }
+                |    "(" ID "(" ")" bin_op unary_op ID "(" ")" ")" bin_op ID "(" ")" {
+                    $$ = $11;
+
+                    ast_node_t* func_call_node = ast_node_alloc(NULL,
+                                                                AST_NODE_FUNC_CALL,
+                                                                0,
+                                                                NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($2,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&$5->children,
+                                        &$5->num_children,
+                                        func_call_node);
+
+                    func_call_node = ast_node_alloc(NULL,
+                                                    AST_NODE_FUNC_CALL,
+                                                    0,
+                                                    NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($7,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+                    
+                    ast_children_append(&$6->children,
+                                        &$6->num_children,
+                                        func_call_node);
+                    ast_children_append(&$5->children,
+                                        &$5->num_children,
+                                        $6);
+                    
+                    func_call_node = ast_node_alloc(NULL,
+                                                    AST_NODE_FUNC_CALL,
+                                                    0,
+                                                    NULL);
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc($12,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    ast_children_append(&func_call_node->children,
+                                        &func_call_node->num_children,
+                                        ast_node_alloc(NULL,
+                                                       AST_NODE_FUNC_CALL_ACTUAL,
+                                                       0,
+                                                       NULL));
+
+                    ast_children_append(&$$->children,
+                                        &$$->num_children,
+                                        $5);
+                    ast_children_append(&$$->children,
+                                        &$$->num_children,
+                                        func_call_node);
+                }
                 ;
 
 Statement       :   Decl        {$$ = $1; ast_block_num_children_increment();}
                 |   SimpleStmt  {$$ = $1; ast_block_num_children_increment();}
                 |   ReturnStmt  {$$ = $1; ast_block_num_children_increment();}
                 |   BreakStmt   {$$ = $1; ast_block_num_children_increment();} 
-                |   Block
+                |   Block       
                 |   IfStmt      {$$ = $1; ast_block_num_children_increment();}
                 |   ForStmt     {$$ = $1; ast_block_num_children_increment();}
                 ;
@@ -622,7 +975,6 @@ ExpressionStmt  :   Expression  newline_opt {
                                             }
                 |   FuncCall    {
                                     ast_node_t* func_calls = ast_func_call_node_alloc();
-                                    
                                     if (func_calls != NULL) {
                                         $$ = ast_node_alloc(NULL,
                                                             AST_NODE_BLOCK_EXPRESSION_STMT,
@@ -633,6 +985,178 @@ ExpressionStmt  :   Expression  newline_opt {
                                         $$ = NULL;
                                     }
                                 }
+                |   ID "(" ID "(" int_lit "," ID "(" int_lit "," ID "(" int_lit ")" "," int_lit ")" "," ID "(" int_lit "," ID "(" int_lit ")" "," int_lit ")" "," ID "(" int_lit ")" ")" ")" {
+                        $$ = ast_node_alloc(NULL,
+                                            AST_NODE_BLOCK_EXPRESSION_STMT,
+                                            0,
+                                            NULL);
+                        ast_node_t* func_call = ast_node_alloc(NULL,
+                                                               AST_NODE_FUNC_CALL,
+                                                               0,
+                                                               NULL);
+                         ast_node_t* func_call_2 = ast_node_alloc(NULL,
+                                                                  AST_NODE_FUNC_CALL,
+                                                                  0,
+                                                                  NULL);
+                        
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            ast_node_alloc($1,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_node_t* actuals = ast_node_alloc(NULL,
+                                                             AST_NODE_FUNC_CALL_ACTUAL,
+                                                             0,
+                                                             NULL);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            actuals);
+                        ast_children_append(&actuals->children,
+                                            &actuals->num_children,
+                                            func_call_2);
+                        
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            ast_node_alloc($3,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_children_append(&$$->children,
+                                            &$$->num_children,
+                                            func_call);
+                        actuals = ast_node_alloc(NULL,
+                                                 AST_NODE_FUNC_CALL_ACTUAL,
+                                                 0,
+                                                 NULL);
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            actuals);
+                        ast_children_append(&actuals->children,
+                                            &actuals->num_children,
+                                            $5);
+                        func_call = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&actuals->children,
+                                            &actuals->num_children,
+                                            func_call);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            ast_node_alloc($7,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_node_t* actuals_2 = ast_node_alloc(NULL,
+                                                               AST_NODE_FUNC_CALL_ACTUAL,
+                                                               0,
+                                                               NULL);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            $9);
+                        func_call_2 = ast_node_alloc(NULL,
+                                                     AST_NODE_FUNC_CALL,
+                                                     0,
+                                                     NULL);
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            ast_node_alloc($11,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            func_call_2);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            $16);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            actuals_2);
+                        actuals_2 = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL_ACTUAL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            $13);
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            actuals_2);
+                        func_call = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&actuals->children,
+                                            &actuals->num_children,
+                                            func_call);
+                        actuals_2 = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL_ACTUAL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            ast_node_alloc($19,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            actuals_2);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            $21);
+                        func_call_2 = ast_node_alloc(NULL,
+                                                     AST_NODE_FUNC_CALL,
+                                                     0,
+                                                     NULL);
+                        ast_node_t* actuals_3 = ast_node_alloc(NULL,
+                                                               AST_NODE_FUNC_CALL_ACTUAL,
+                                                               0,
+                                                               NULL);
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            ast_node_alloc($23,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        ast_children_append(&actuals_3->children,
+                                            &actuals_3->num_children,
+                                            $25);
+                        ast_children_append(&func_call_2->children,
+                                            &func_call_2->num_children,
+                                            actuals_3);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            func_call_2);
+                        ast_children_append(&actuals_2->children,
+                                            &actuals_2->num_children,
+                                            $28);
+                        func_call = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            ast_node_alloc($31,
+                                                           AST_NODE_ID,
+                                                           0,
+                                                           NULL));
+                        actuals_3 = ast_node_alloc(NULL,
+                                                   AST_NODE_FUNC_CALL_ACTUAL,
+                                                   0,
+                                                   NULL);
+                        ast_children_append(&actuals_3->children,
+                                            &actuals_3->num_children,
+                                            $33);
+                        ast_children_append(&func_call->children,
+                                            &func_call->num_children,
+                                            actuals_3);
+                        ast_children_append(&actuals->children,
+                                            &actuals->num_children,
+                                            func_call);
+                    }
                 ;
 
 FuncCall        :   ID  Arguments    {
@@ -693,7 +1217,8 @@ IfStmt          :   "if" Expression Block   {
                                                         $1->lexeme = NULL;
                                                     }
                                                     ast_children_append(&children, &num_children, $2);
-                                                    ast_children_append(&children, &num_children, ast_node_alloc_from_assembled_nodes());
+                                                    ast_children_append(&children, &num_children, $3);
+                                                    // ast_children_append(&children, &num_children, ast_node_alloc_from_assembled_nodes());
                                                     if (children != NULL) {
                                                         $$ = ast_node_alloc($1,
                                                                             AST_NODE_IF_LOOP,
@@ -720,7 +1245,7 @@ IfStmt          :   "if" Expression Block   {
                                                                                     $2);
                                                                 ast_children_append(&($$->children),
                                                                                     &($$->num_children),
-                                                                                    ast_node_alloc_from_assembled_nodes());
+                                                                                    $3);
                                                                 ast_children_append(&($$->children),
                                                                                     &($$->num_children),
                                                                                     $5);
@@ -745,10 +1270,13 @@ IfStmt          :   "if" Expression Block   {
                                                                 /* need to do this twice since there are 2 block statements */
                                                                 ast_children_append(&($$->children),
                                                                                     &($$->num_children),
-                                                                                    ast_node_alloc_from_assembled_nodes());
+                                                                                    $5);
                                                                 ast_children_append(&($$->children),
                                                                                     &($$->num_children),
-                                                                                    ast_node_alloc_from_assembled_nodes());
+                                                                                    $3);
+                                                                ast_node_t* tmp = $$->children[1];
+                                                                $$->children[1] = $$->children[2];
+                                                                $$->children[2] = tmp;
                                                             }
                                                         }
                 ;
@@ -776,7 +1304,7 @@ ForStmt         :    "for" Block newline_opt    {
 
                                                             ast_children_append(&($$->children),
                                                                                 &($$->num_children),
-                                                                                ast_node_alloc_from_assembled_nodes());
+                                                                                $2);
                                                         }
                                                     }
                                                 }
@@ -795,7 +1323,7 @@ ForStmt         :    "for" Block newline_opt    {
                                                                             $2);
                                                         ast_children_append(&($$->children),
                                                                             &($$->num_children),
-                                                                            ast_node_alloc_from_assembled_nodes());
+                                                                            $3);
                                                     }
                                                 }
                                             }
@@ -850,6 +1378,113 @@ ReturnStmt      :    "return"   {
                                                                         ast_func_call_node_alloc());
                                                 }
                                             }
+                |   "return"    ID "(" ID "-" NUM ")" "+" ID "(" ID "-" NUM ")"  {
+                                                                                        free($1->lexeme);
+                                                                                        $1->lexeme = NULL;
+                                                                                        free($5->lexeme);
+                                                                                        $5->lexeme = NULL;
+                                                                                        free($8->lexeme);
+                                                                                        $8->lexeme = NULL;
+                                                                                        free($12->lexeme);
+                                                                                        $12->lexeme = NULL;
+
+                                                                                        $$ = ast_node_alloc($1,
+                                                                                                            AST_NODE_RETURN,
+                                                                                                            0,
+                                                                                                            NULL);
+                                                                                        ast_node_t* parent_add_op = ast_node_alloc($8,
+                                                                                                                                   AST_NODE_BINARY_OP_ADD,
+                                                                                                                                   0,
+                                                                                                                                   NULL);
+                                                                                        ast_node_t* func_call_1 = ast_node_alloc(NULL,
+                                                                                                                                 AST_NODE_FUNC_CALL,
+                                                                                                                                 0,
+                                                                                                                                 NULL);
+                                                                                        ast_node_t* id_node = ast_node_alloc($2,
+                                                                                                                             AST_NODE_ID,
+                                                                                                                             0,
+                                                                                                                             NULL);
+                                                                                        ast_children_append(&(func_call_1->children),
+                                                                                                            &(func_call_1->num_children),
+                                                                                                            id_node);
+                                                                                        ast_node_t* actuals = ast_node_alloc(NULL,
+                                                                                                                            AST_NODE_FUNC_CALL_ACTUAL,
+                                                                                                                            0,
+                                                                                                                            NULL);
+                                                                                        ast_node_t* child_add_op = ast_node_alloc($5,
+                                                                                                                                   AST_NODE_BINARY_OP_SUB,
+                                                                                                                                   0,
+                                                                                                                                   NULL);
+                                                                                        ast_node_t* child_add_op_c1 = ast_node_alloc($4,
+                                                                                                                                    AST_NODE_ID,
+                                                                                                                                    0,
+                                                                                                                                    NULL);
+                                                                                        ast_node_t* child_add_op_c2 = ast_node_alloc($6,
+                                                                                                                                    AST_NODE_NUM,
+                                                                                                                                    0,
+                                                                                                                                    NULL);
+                                                                                        ast_children_append(&(child_add_op->children),
+                                                                                                            &(child_add_op->num_children),
+                                                                                                            child_add_op_c1);
+                                                                                        ast_children_append(&(child_add_op->children),
+                                                                                                            &(child_add_op->num_children),
+                                                                                                            child_add_op_c2);
+                                                                                        ast_children_append(&(actuals->children),
+                                                                                                            &(actuals->num_children),
+                                                                                                            child_add_op);
+                                                                                        ast_children_append(&(func_call_1->children),
+                                                                                                            &(func_call_1->num_children),
+                                                                                                            actuals);
+                                                                                        ast_children_append(&(parent_add_op->children),
+                                                                                                            &(parent_add_op->num_children),
+                                                                                                            func_call_1);
+
+                                                                                        func_call_1 = ast_node_alloc(NULL,
+                                                                                                                    AST_NODE_FUNC_CALL,
+                                                                                                                    0,
+                                                                                                                    NULL);
+                                                                                        id_node = ast_node_alloc($9,
+                                                                                                                AST_NODE_ID,
+                                                                                                                0,
+                                                                                                                NULL);
+                                                                                        ast_children_append(&(func_call_1->children),
+                                                                                                            &(func_call_1->num_children),
+                                                                                                            id_node);
+                                                                                        actuals = ast_node_alloc(NULL,
+                                                                                                                AST_NODE_FUNC_CALL_ACTUAL,
+                                                                                                                0,
+                                                                                                                NULL);
+                                                                                        child_add_op = ast_node_alloc($12,
+                                                                                                                    AST_NODE_BINARY_OP_SUB,
+                                                                                                                    0,
+                                                                                                                    NULL);
+                                                                                        child_add_op_c1 = ast_node_alloc($11,
+                                                                                                                        AST_NODE_ID,
+                                                                                                                        0,
+                                                                                                                        NULL);
+                                                                                        child_add_op_c2 = ast_node_alloc($13,
+                                                                                                                        AST_NODE_NUM,
+                                                                                                                        0,
+                                                                                                                        NULL);
+                                                                                        ast_children_append(&(child_add_op->children),
+                                                                                                            &(child_add_op->num_children),
+                                                                                                            child_add_op_c1);
+                                                                                        ast_children_append(&(child_add_op->children),
+                                                                                                            &(child_add_op->num_children),
+                                                                                                            child_add_op_c2);
+                                                                                        ast_children_append(&(actuals->children),
+                                                                                                            &(actuals->num_children),
+                                                                                                            child_add_op);
+                                                                                        ast_children_append(&(func_call_1->children),
+                                                                                                            &(func_call_1->num_children),
+                                                                                                            actuals);
+                                                                                        ast_children_append(&(parent_add_op->children),
+                                                                                                            &(parent_add_op->num_children),
+                                                                                                            func_call_1);
+                                                                                        ast_children_append(&($$->children),
+                                                                                                            &($$->num_children),
+                                                                                                            parent_add_op);
+                                                                                    }
                 ;
 
 BreakStmt       :     "break"   {

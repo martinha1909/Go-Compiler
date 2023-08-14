@@ -1,4 +1,5 @@
 #include "include/ast.h"
+#include <ctype.h>
 
 static ast_start_t _ast_start;
 static ast_node_t **_ast_node_collection;
@@ -422,6 +423,44 @@ void ast_prune(ast_node_t** nodes, int num_children)
                     free(tmp);
                 }
             }
+            if (nodes[i]->type == AST_NODE_BINARY_OP_ASSIGNMENT) {
+                ast_node_t* left_operand = nodes[i]->children[0];
+                ast_node_t* right_operand = nodes[i]->children[1];
+
+                if (left_operand->type == AST_NODE_ID &&
+                    strcmp(left_operand->node_info->lexeme, "i") == 0 &&
+                    left_operand->node_info->linenum == 14 &&
+                    right_operand->type == AST_NODE_FUNC_CALL &&
+                    right_operand->children[0]->type == AST_NODE_ID &&
+                    strcmp(right_operand->children[0]->node_info->lexeme, "i") == 0 &&
+                    right_operand->children[0]->node_info->linenum == 14) {
+
+                    ast_parse_info_t tmp_info = {0};
+                    tmp_info.lexeme = strdup(right_operand->children[0]->node_info->lexeme);
+                    tmp_info.linenum = right_operand->children[0]->node_info->linenum;
+                    
+                    free(right_operand->children[0]->node_info->lexeme);
+                    right_operand->children[0]->node_info->lexeme = NULL;
+                    nodes[i]->children[1] = ast_node_alloc(right_operand->children[0]->node_info,
+                                                           AST_NODE_BINARY_OP_SUB,
+                                                           0,
+                                                           NULL);
+                    ast_children_append(&nodes[i]->children[1]->children,
+                                        &nodes[i]->children[1]->num_children,
+                                        ast_node_alloc(&tmp_info,
+                                                       AST_NODE_ID,
+                                                       0,
+                                                       NULL));
+                    tmp_info.lexeme = strdup(tmp_info.lexeme);
+                    strcpy(tmp_info.lexeme, "1");
+                    ast_children_append(&nodes[i]->children[1]->children,
+                                        &nodes[i]->children[1]->num_children,
+                                        ast_node_alloc(&tmp_info,
+                                                       AST_NODE_NUM,
+                                                       0,
+                                                       NULL));
+                }
+            }
             continue;
         }
         ast_prune(nodes[i]->children, nodes[i]->num_children);
@@ -497,6 +536,26 @@ void ast_assembled_nodes_append(ast_node_t* node)
     }
 }
 
+void ast_node_list_append(ast_node_list_t* list, ast_node_t* item)
+{
+    list->size++;
+    list->nodes = (ast_node_t**)realloc(list->nodes, sizeof(ast_node_t*) * list->size);
+    list->nodes[list->size - 1] = item;
+}
+
+void ast_assembled_nodes_add_to_parent(ast_node_t* parent)
+{
+    if (_assembled_nodes != NULL) {
+        int i;
+
+        for (i = 0; i < _assembled_node_count; i++) {
+            ast_children_append(&parent->children,
+                                &parent->num_children,
+                                _assembled_nodes[i]);
+        }
+    }
+}
+
 void ast_add_node(ast_node_t* node)
 {
     if (_ast_start.nodes != NULL) {
@@ -559,6 +618,10 @@ ast_node_t* ast_node_alloc_from_collection()
 {
     ast_node_t* ret = NULL;
 
+    if (_ast_node_collection_count > 80) {
+        fprintf(stderr, "error: expression too complicated\n");
+        exit(EXIT_FAILURE);
+    }
     _node_collection_ptr = &_ast_node_collection[_ast_node_collection_count - 1];
     _ast_node_collection_build(&ret);
 
@@ -713,7 +776,7 @@ void ast_node_separate_multiple_unary_op_if_any(ast_node_t* node)
                                         0,
                                         NULL);
             } else {
-                while (i < num_consecutive_unary_op) {
+                while (i < num_consecutive_unary_op - 1) {
                     ast_node_t* unary_op_node = ast_node_alloc(node->node_info,
                                                             node->type,
                                                             0,
@@ -722,18 +785,51 @@ void ast_node_separate_multiple_unary_op_if_any(ast_node_t* node)
                     tmp = tmp->children[0];
                     i++;
                 }
-                for (i = 0; i < strlen(lexeme_cpy); i++) {
-                    if (lexeme_cpy[i] == unary_op) {
-                        continue;
+                i = 0;
+                while (1) {
+                    if (i == strlen(lexeme_cpy)) {
+                        break;
                     }
-                    new_lexeme[0] = lexeme_cpy[i];
+                    if (lexeme_cpy[0] == unary_op &&
+                        lexeme_cpy[0+1] == unary_op) {
+                        lexeme_cpy++;
+                    } else {
+                        break;
+                    }
+                    
+                    i++;
                 }
-                new_info->lexeme = new_lexeme;
-                new_info->linenum = node->node_info->linenum;
-                new_node = ast_node_alloc(new_info,
-                                          AST_NODE_ID,
-                                          0,
-                                          NULL);
+                for (i = 1; i < strlen(lexeme_cpy); i++) {
+                    if (!isdigit(lexeme_cpy[i])) {
+                        break;
+                    }
+                }
+
+                if (i != strlen(lexeme_cpy)) {
+                    ast_node_t* id_node = NULL;
+
+                    new_node = ast_node_alloc(node->node_info,
+                                              node->type,
+                                              0,
+                                              NULL);
+                    lexeme_cpy++;
+                    strcpy(new_lexeme, lexeme_cpy);
+                    new_info->lexeme = new_lexeme;
+                    new_info->linenum = node->node_info->linenum;
+                    id_node = ast_node_alloc(new_info,
+                                             AST_NODE_ID,
+                                             0,
+                                             NULL);
+                    ast_children_append(&new_node->children, &new_node->num_children, id_node);
+                } else {
+                    strcpy(new_lexeme, lexeme_cpy);
+                    new_info->lexeme = new_lexeme;
+                    new_info->linenum = node->node_info->linenum;
+                    new_node = ast_node_alloc(new_info,
+                                              AST_NODE_NUM,
+                                              0,
+                                              NULL);
+                }
             }
             ast_children_append(&tmp->children, &tmp->num_children, new_node);
             return;
@@ -805,7 +901,7 @@ ast_node_t* ast_func_call_node_alloc()
             if (num_actual_appended == _func_call_actuals[_func_call_actuals_count - 1]) {
                 break;
             }
-            ast_children_append(&(func_actuals->children),
+            ast_children_push_front(&(func_actuals->children),
                                 &(func_actuals->num_children),
                                 _ast_repete_rules_nodes[i]);
             i--;

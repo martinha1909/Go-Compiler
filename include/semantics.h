@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "ast.h"
+#include "asm_code_gen.h"
 
 #define SEMANTICS_STR_MAX_LEN                   1048
 #define SEMANTICS_SCOPE_MAX_NUM                 100
@@ -13,9 +14,17 @@
 #define SEMANTICS_TYPE_BOOL                     "bool"
 #define SEMANTICS_TYPE_INT                      "int"
 #define SEMANTICS_TYPE_STRING                   "string"
+#define FUNC_RV_IS_VOID(rv_sig)                 ({\
+                                                    bool ret = false;\
+                                                    if (strcmp(rv_sig, SEMANTICS_TYPE_VOID) == 0 ||\
+                                                        strcmp(rv_sig, "$void") == 0) {\
+                                                        ret = true;\
+                                                    }\
+                                                    ret;\
+                                                })
 
 #define SEMANTICS_FUNCTION_NAME_SCOPE(fmt, ...) ({\
-                                                    char *scope_name = strdup(fmt);\
+                                                    char *scope_name = (char*)calloc(sizeof(char), PATH_MAX);\
                                                     sprintf(scope_name, fmt, ##__VA_ARGS__);\
                                                     scope_name;\
                                                 })           
@@ -57,6 +66,7 @@
 typedef struct node node_t;
 typedef struct ast_start ast_start_t;
 typedef enum ast_node_type_e ast_node_type_t;
+typedef struct asm_tmp_reg asm_tmp_reg_t;
 
 typedef struct semantics_stab_record {
     char* symbol_name;
@@ -64,6 +74,8 @@ typedef struct semantics_stab_record {
     char* rv_sig;
     bool is_const;
     bool is_type;
+    asm_tmp_reg_t* label;
+    char* rv_label;
 } semantics_stab_record_t;
 
 typedef struct semantics_legal_operators {
@@ -78,6 +90,7 @@ typedef struct semantics_scope {
 
 void semantics_init();
 bool semantics_node_type_is_operator(ast_node_type_t node_type);
+bool semantics_node_type_is_unary_operator(ast_node_type_t node_type);
 semantics_stab_record_t* semantics_define(semantics_stab_record_t* record, int linenum);
 semantics_stab_record_t* semantics_lookup(ast_node_t* symbol);
 void semantics_open_scope(const char* scope_name);

@@ -3,6 +3,7 @@
 #include "include/token.h"
 #include "include/ast.h"
 #include "include/semantics.h"
+#include "include/asm_code_gen.h"
 
 static int _err_line_num;
 static token_type_t _err_tok;
@@ -53,14 +54,14 @@ int scanner_yylex()
     // printf("Token type: %s\n", token_type_str(tok->token_type));
     // printf("Lex: %s\n", tok->lexeme);
 
-    if (tok->token_type == TOKEN_TYPE_OPEN_CURLY_BRACKET) {
-        if (ast_blocks_num_children_size() > 0) {
-            ast_block_num_children_increment();
-        }
-        ast_record_block_num_children();
-    } else if (tok->token_type == TOKEN_TYPE_CLOSE_CURLY_BRACKET) {
-        ast_in_block_check();
-    }
+    // if (tok->token_type == TOKEN_TYPE_OPEN_CURLY_BRACKET) {
+    //     if (ast_blocks_num_children_size() > 0) {
+    //         ast_block_num_children_increment();
+    //     }
+    //     ast_record_block_num_children();
+    // } else if (tok->token_type == TOKEN_TYPE_CLOSE_CURLY_BRACKET) {
+    //     ast_in_block_check();
+    // }
     if (tok->token_type == TOKEN_TYPE_OPEN_ROUND_BRACKET) {
         /* if an ID is followed by a '(', we know that it's a function call */
         if (token_prev_at(1)->token_type == TOKEN_TYPE_ID ||
@@ -92,12 +93,12 @@ done:
 
 void scanner_yyerror(const char* err)
 {
-    if (_err_tok == TOKEN_TYPE_NEWLINE) {
-        fprintf(stderr, "error: unexpected newline at or near line %d\n", _err_line_num);
-    } else {
-        fprintf(stderr, "error: syntax error on \"%s\" at or near line %d\n", token_type_str(_err_tok), _err_line_num);
-    }
-    // fprintf(stderr, "%s at line %d\n", err, _err_line_num);
+    // if (_err_tok == TOKEN_TYPE_NEWLINE) {
+    //     fprintf(stderr, "error: unexpected newline at or near line %d\n", _err_line_num);
+    // } else {
+    //     fprintf(stderr, "error: syntax error on \"%s\" at or near line %d\n", token_type_str(_err_tok), _err_line_num);
+    // }
+    fprintf(stderr, "%s at line %d\n", err, _err_line_num);
 }
 
 int main(int argc, char** argv)
@@ -144,6 +145,8 @@ int main(int argc, char** argv)
     ast_annotated_node_count = ast_node_count_get();
     ast_prune(ast_annotated->nodes, ast_annotated_node_count);
 
+    // ast_print_specific(ast_annotated, ast_annotated_node_count);
+
     semantics_init();
 
     semantics_global_decl_check(ast_annotated, ast_annotated_node_count);
@@ -151,7 +154,8 @@ int main(int argc, char** argv)
     semantics_type_check(ast_annotated, ast_annotated_node_count);
     semantics_miscellaneous_check(ast_annotated, ast_annotated_node_count);
 
-    ast_print_specific(ast_annotated, ast_annotated_node_count);
+    // ast_print_specific(ast_annotated, ast_annotated_node_count);
+    asm_code_gen(ast_annotated->nodes, ast_annotated_node_count);
 
     ret = EXIT_SUCCESS;
 done:

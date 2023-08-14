@@ -182,6 +182,26 @@ static semantics_stab_record_t* _return_func_symbol_from_scope(int curr_linenum)
     return semantics_lookup(curr_func_node);
 }
 
+static bool _found_return_stmt(ast_node_t** func_children, int func_num_children)
+{
+    int i;
+    bool ret = false;
+
+    if (func_children == NULL || func_num_children == 0) {
+        return ret;
+    }
+
+    for (i = 0; i < func_num_children; i++) {
+        if (func_children[i]->type == AST_NODE_RETURN) {
+            return true;
+        }
+
+        ret = _found_return_stmt(func_children[i]->children, func_children[i]->num_children);
+    }
+
+    return ret;
+}
+
 static const char* _operands_type_check(ast_node_t* operator_node)
 {
     int i;
@@ -216,7 +236,12 @@ static const char* _operands_type_check(ast_node_t* operator_node)
                                 SEMANTICS_ERROR(operator_node->node_info->linenum, SEMANTICS_NON_VAR_ASSIGMENT_ERR);
                             }
                         }
-                        left_operand_type = ast_str_node_type(left_operand->type);
+                        if (left_operand->type == AST_NODE_FUNC_CALL) {
+                            ast_node_t* func_call_sym = left_operand->children[0];
+                            left_operand_type = func_call_sym->symbol_loc->rv_sig;
+                        } else {
+                            left_operand_type = ast_str_node_type(left_operand->type);
+                        }
                     } else {
                         if (operator_node->type == AST_NODE_BINARY_OP_ASSIGNMENT) {
                             /* left operand cannot be a constant for assignment */
@@ -290,8 +315,20 @@ static const char* _operands_type_check(ast_node_t* operator_node)
                 if (semantics_node_type_is_operator(right_operand->type)) {
                     right_operand_type = (char*)_operands_type_check(right_operand);
                 } else {
+                    if (operator_node->type == AST_NODE_BINARY_OP_NEGATE) {
+                        operator_node->type = AST_NODE_UNARY_OP_LOGICAL_NEGATE;
+                    }
                     if (strcmp(ast_str_node_type(right_operand->type), "id") != 0) {
-                        right_operand_type = ast_str_node_type(right_operand->type);
+                        if (right_operand->type == AST_NODE_FUNC_CALL) {
+                            right_operand_type = right_operand->children[0]->symbol_loc->rv_sig;
+                        } else {
+                            if (strcmp(right_operand->node_info->lexeme, "true") == 0 ||
+                                strcmp(right_operand->node_info->lexeme, "false") == 0) {
+                                right_operand_type = SEMANTICS_TYPE_BOOL;
+                            } else {
+                                right_operand_type = ast_str_node_type(right_operand->type);
+                            }
+                        }
                     } else {
                         /* an ID will have a location on the symbol table */
                         right_operand_type = right_operand->symbol_loc->sig;
@@ -423,7 +460,6 @@ static void _semantics_decl_check(ast_node_t** nodes, int num_children)
             ast_node_t* func_body = nodes[i]->children[2];
 
             semantics_open_scope(SEMANTICS_FUNCTION_NAME_SCOPE("%s", func_name->node_info->lexeme));
-
             for (j = 0; j < func_params->num_children; j++) {
                 ast_node_t* func_param_var_id = func_params->children[j]->children[0];
                 ast_node_t* func_param_var_type = func_params->children[j]->children[1];
@@ -449,22 +485,35 @@ static void _semantics_decl_check(ast_node_t** nodes, int num_children)
             int j;
             ast_node_t* func_call_id = nodes[i]->children[0];
             ast_node_t* func_call_params = nodes[i]->children[1];
+            bool func_call_next = false;
+
+            // printf("func_call_id: %s\n", func_call_id->node_info->lexeme);
 
             /* check if the function that is being called exists */
             func_call_id->symbol_loc = semantics_lookup(func_call_id);
 
             if (func_call_params->num_children > 0) {
-                if (func_call_params->children[0]->type == AST_NODE_FUNC_CALL) {
-                    _semantics_decl_check(func_call_params->children, func_call_params->num_children);
-                    continue;
-                } else {
-                    for (j = 0; j < func_call_params->num_children; j++) {
-                        ast_node_t* param = func_call_params->children[j];
+                // if (func_call_params->children[0]->type == AST_NODE_FUNC_CALL ||
+                //     func_call_params->children[1]->type == AST_NODE_FUNC_CALL) {
+                //     _semantics_decl_check(func_call_params->children, func_call_params->num_children);
+                //     continue;
+                // } else {
+                for (j = 0; j < func_call_params->num_children; j++) {
+                    ast_node_t* param = func_call_params->children[j];
 
+                    if (param->type == AST_NODE_FUNC_CALL) {
+                        _semantics_decl_check(func_call_params->children, func_call_params->num_children);
+                        func_call_next = true;
+                    } else {
                         /* check to see if the parameters passed to the function call exist */
                         param->symbol_loc = semantics_lookup(param);
                     }
                 }
+                // }
+            }
+
+            if (func_call_next) {
+                continue;
             }
         }
         if (nodes[i]->type == AST_NODE_RETURN) {
@@ -505,7 +554,7 @@ static void _semantics_type_check(ast_node_t** nodes, int num_children)
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("Node->type: %s\n", ast_str_node_type(nodes[i]->type));
+        // printf("node->type: %s\n", ast_str_node_type(nodes[i]->type));
         if (nodes[i]->type == AST_NODE_VAR_DECL ||
             nodes[i]->type == AST_NODE_VAR_GLOBAL_DECL) {
             ast_node_t* var_name = nodes[i]->children[0];
@@ -537,7 +586,6 @@ static void _semantics_type_check(ast_node_t** nodes, int num_children)
             func_sig_params = _get_func_sig_params(func_call_id->symbol_loc->sig, 
                                                    &num_func_sig_params,
                                                    func_call_id->node_info->linenum);
-
             if (func_sig_params == NULL) {
                 if (func_call_params->num_children > 0) {
                     SEMANTICS_ERROR(func_call_id->node_info->linenum, SEMANTICS_FUNC_CALL_NUM_ARGS_ERR);
@@ -550,6 +598,11 @@ static void _semantics_type_check(ast_node_t** nodes, int num_children)
 
             /* check if the type of arguments passed to function matches with function signature */            
             for (j = 0; j < num_func_sig_params; j++) {
+                int z = 0;
+                while (func_sig_params[j][z] == ' ') {
+                    func_sig_params[j]++;
+                    z++;
+                }
                 if (func_call_params->children[j]->type == AST_NODE_FUNC_CALL) {
                     /* if the argument of a function call is another function call, we check the return type of that function call */
                     ast_node_t* next_func_call_id = func_call_params->children[j]->children[0];
@@ -573,11 +626,6 @@ static void _semantics_type_check(ast_node_t** nodes, int num_children)
                     }
                 }
             }
-
-            for (j = 0; j < num_func_sig_params; j++) {
-                free(func_sig_params[j]);
-            }
-            free(func_sig_params);
         }
         if (nodes[i]->type == AST_NODE_FUNC) {
             ast_node_t* func_name = nodes[i]->children[0];
@@ -678,16 +726,7 @@ static void _semantics_miscellaneous_check(ast_node_t** nodes, int num_children)
             // printf("Func name: %s\n", nodes[i]->children[0]->node_info->lexeme);
             ast_node_t* func_block = nodes[i]->children[2];
             ast_node_t* return_stmt_node = NULL;
-            int j;
-            bool return_stmt_found = false;
-
-            for (j = 0; j < func_block->num_children; j++) {
-                if (func_block->children[j]->type == AST_NODE_RETURN) {
-                    return_stmt_found = true;
-                    return_stmt_node = func_block->children[j];
-                    break;
-                }
-            }
+            bool return_stmt_found = _found_return_stmt(func_block->children, func_block->num_children);
 
             if (strcmp(nodes[i]->symbol_loc->rv_sig, "void") == 0 ||
                 strcmp(nodes[i]->symbol_loc->rv_sig, "$void") == 0) {
@@ -763,6 +802,14 @@ bool semantics_node_type_is_operator(ast_node_type_t node_type)
                 node_type == AST_NODE_BINARY_OP_NEGATE ||
                 node_type == AST_NODE_UNARY_OP_NEGATE ||
                 node_type == AST_NODE_UNARY_OP_LOGICAL_NEGATE
+            );
+}
+
+bool semantics_node_type_is_unary_operator(ast_node_type_t node_type)
+{
+    return  (
+                node_type == AST_NODE_UNARY_OP_LOGICAL_NEGATE ||
+                node_type == AST_NODE_UNARY_OP_NEGATE
             );
 }
 
@@ -870,7 +917,6 @@ void semantics_global_decl_check(ast_start_t* ast_annotated, int ast_annotated_n
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("node type: %s\n", ast_str_node_type(nodes[i]->type));
         if (nodes[i]->type == AST_NODE_VAR_GLOBAL_DECL) {
             semantics_stab_record_t record = {};
 

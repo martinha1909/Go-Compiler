@@ -1,0 +1,57 @@
+	.data
+Strue:
+	.asciiz"true"
+Sfalse:
+	.asciiz"false"
+	.text
+divmodchk:
+	seq $s0,$a0,-2147483648
+	beqz $s0,divmodchk_end
+	seq $s0,$a1,-1
+	beqz $s0,divmodchk_end
+	li $a1,1
+divmodchk_end:
+	move $v0,$a1
+	jr $ra
+Lprintc:
+	addi $v0, $0, 11
+	syscall
+	jr $ra
+Lprinti:
+	addi $v0, $0, 1
+	syscall
+	jr $ra
+Lprints:
+	addi $v0, $0, 4
+	syscall
+	jr $ra
+Lgetchar:
+	addi $v0, $0, 12
+	syscall
+	jr $ra
+Lhalt:
+	addi $v0, $0, 10
+	syscall
+Llen:
+	li $s0,0
+Llen_loop:
+	lb $s1,0($a0)
+	beqz $s1,Llen_loop_done
+	addi $a0,$a0,1
+	addi $s0,$s0,1
+	j Llen_loop
+Llen_loop_done:
+	move $v0,$s0
+	jr $ra
+Lprintb:
+	move $t0,$a0
+	beqz $t0,Sfalse_print
+	la $a0,Strue
+	addi $v0, $0, 4
+	syscall
+	jr $ra
+Sfalse_print:
+	la $a0,Sfalse
+	addi $v0, $0, 4
+	syscall
+	jr $ra
