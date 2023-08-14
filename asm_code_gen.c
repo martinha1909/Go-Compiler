@@ -10,15 +10,7 @@ static void _gen_condition_bin(const char* match_label, const char* non_match_la
 
 #define DIV_BY_Z_ERROR_LAB      "S1"
 #define FUNC_NO_RETURN_ERR_LAB  "S2"
-#define __GEN_LABEL__(l)        {\
-                                    if (strcmp(l, "FR_there_is_no_comparison_there_is_only_") == 0) {\
-                                        strcpy((char*)l, "FR_there_is_no_comparison_there_is_only_zuul");\
-                                    }\
-                                    if (strcmp(l, "F_there_is_no_comparison_there_is_only_") == 0) {\
-                                        strcpy((char*)l, "F_there_is_no_comparison_there_is_only_zuul");\
-                                    }\
-                                    printf("%s:\n", l);\
-                                }
+#define __GEN_LABEL__(l)        printf("%s:\n", l);
 #define __GEN_NON_LABEL__(l)    printf("\t%s\n", l);
 #define __GOLF_BUILT_IN__(f)    _gen_func_label(f)
 #define __IS_BUILT_IN__(f)        ({\
@@ -35,9 +27,6 @@ static void _gen_condition_bin(const char* match_label, const char* non_match_la
 #define __ASM_GEN(ins_fmt, ...) {\
                                     char instruction[PATH_MAX * 5];\
                                     snprintf(instruction, PATH_MAX * 5, ins_fmt, ##__VA_ARGS__);\
-                                    if (strcmp(instruction, "jal F_there_is_no_comparison_there_is_only_") == 0) {\
-                                        strcpy(instruction, "jal F_there_is_no_comparison_there_is_only_zuul");\
-                                    }\
                                     __GEN_NON_LABEL__(instruction);\
                                 }
 
