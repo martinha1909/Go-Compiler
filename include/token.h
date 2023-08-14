@@ -12,44 +12,6 @@
 #define TOKEN_LEXEME_MAX_LEN    2048
 #define TOKEN_MAX_NUM           1024
 
-// typedef enum token_type_e {
-    // TOKEN_TYPE_NONE = 0,
-    // TOKEN_TYPE_ILLEGAL,
-    // TOKEN_TYPE_ILLEGAL_STRING,
-    // TOKEN_TYPE_ID,
-    // TOKEN_TYPE_STRING,
-    // TOKEN_TYPE_NUM,
-    // TOKEN_TYPE_KEYWORD_BREAK,
-    // TOKEN_TYPE_KEYWORD_ELSE,
-    // TOKEN_TYPE_KEYWORD_FOR,
-    // TOKEN_TYPE_KEYWORD_FUNC,
-    // TOKEN_TYPE_KEYWORD_IF,
-    // TOKEN_TYPE_KEYWORD_RETURN,
-    // TOKEN_TYPE_KEYWORD_VAR,
-    // TOKEN_TYPE_ADD = 43,
-    // TOKEN_TYPE_SUB = 45,
-    // TOKEN_TYPE_MULT = 42,
-    // TOKEN_TYPE_DIV = 47,
-    // TOKEN_TYPE_PERCENTAGE = 37,
-    // TOKEN_TYPE_AND_CMP,
-    // TOKEN_TYPE_OR_CMP,
-    // TOKEN_TYPE_EQ_CMP,
-    // TOKEN_TYPE_GT,
-    // TOKEN_TYPE_LT,
-    // TOKEN_TYPE_ASSIGNMENT,
-    // TOKEN_TYPE_NOT,
-    // TOKEN_TYPE_NOT_EQ_CMP,
-    // TOKEN_TYPE_LE,
-    // TOKEN_TYPE_GE,
-    // TOKEN_TYPE_OPEN_ROUND_BRACKET = 40,
-    // TOKEN_TYPE_OPEN_CURLY_BRACKET = 23,
-    // TOKEN_TYPE_COMMA,
-    // TOKEN_TYPE_CLOSE_ROUND_BRACKET = 41,
-    // TOKEN_TYPE_CLOSE_CURLY_BRACKET = 25,
-    // TOKEN_TYPE_SEMI_COLON,
-    // TOKEN_TYPE_COMMENT
-// } token_type_t;
-
 typedef enum yytokentype token_type_t;
 
 typedef struct token {

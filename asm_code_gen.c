@@ -131,7 +131,6 @@ static char**                   _curr_loop_labels;
 static bool                     _print_string_begin = true;
 static bool                     _rv_found = false;
 static bool                     _built_in_redefined = false;
-// static ast_node_t* _current_func = NULL;
 static asm_tmp_reg_t _temp_regs[] = {
     {
         "$t0",
@@ -178,11 +177,6 @@ static void _free_tmp_reg_by_name(const char* tmp_reg_name)
         }
     }
 }
-
-// static inline void _gen_non_label(const char* code)
-// {
-//     printf("\t%s\n", code);
-// }
 
 
 static inline void _gen_err_label(const char* err_label)
@@ -305,16 +299,9 @@ static asm_tmp_reg_t* _tmp_reg_alloc()
     return NULL;
 }
 
-// static inline void _func_call_start()
-// {
-//     __ASM_GEN("subu %s,%s,%d", "$sp", "$sp", 4);
-//     __ASM_GEN("sw %s,0(%s)", "$ra", "$sp");
-// }
-
 static inline void _func_call_end(const char* end_func)
 {
     __ASM_GEN("jal %s", end_func);
-    // __ASM_GEN("addu %s,%s,%d", "$sp", "$sp", 4);
 }
 
 static void _print_string_constant(const char* label, const char* data)
@@ -360,28 +347,15 @@ static void _print_string_constant(const char* label, const char* data)
 
 static char* _loop_label_alloc()
 {
-    // if (_curr_rv_label != NULL) {
-    //     if (strcmp(_curr_rv_label, "FR_there_is_no_comparison_there_is_only_zuul") == 0) {
-    //         return "hello";
-    //     } else {
-    //         char *loop_label = (char*)calloc(sizeof(char), PATH_MAX);
+    char *loop_label = (char*)calloc(sizeof(char), PATH_MAX);
 
-    //         snprintf(loop_label, PATH_MAX, "L%d", _loop_label_num);
-    //         _loop_label_num++;
-    //         return loop_label;
-    //     }
-    // } else {
-        char *loop_label = (char*)calloc(sizeof(char), PATH_MAX);
-
-        snprintf(loop_label, PATH_MAX, "L%d", _loop_label_num);
-        _loop_label_num++;
-        return loop_label;
-    // }
+    snprintf(loop_label, PATH_MAX, "L%d", _loop_label_num);
+    _loop_label_num++;
+    return loop_label;
 }
 
 static void _alloc_func_stack(int stack_space)
 {
-    // printf("stack space: %d\n", stack_space);
     __ASM_GEN("subu $sp,$sp,%d", (stack_space + 1) * 4);
     __ASM_GEN("sw $ra,0($sp)");
 }
@@ -443,7 +417,6 @@ static void _gen_func_call(ast_node_t* func_call_node, bool alloc_stack, int num
                     }
                 }
                 func_args[i].symbol = temp_register->reg;
-                // __ASM_GEN("move %s,%s", arg_reg, temp_register->reg);
             }
         } else if (semantics_node_type_is_operator(func_call_actuals->children[i]->type)) {
             _operator_code_gen(func_call_actuals->children[i]);
@@ -455,9 +428,6 @@ static void _gen_func_call(ast_node_t* func_call_node, bool alloc_stack, int num
         asm_tmp_reg_t* temp_register = NULL;
         char arg_reg[PATH_MAX];
 
-        // if (semantics_node_type_is_operator(*(func_args[i].arg_type))) {
-        //     continue;
-        // }
         snprintf(arg_reg, PATH_MAX, "$%c%d", 'a', i);
 
         if (*(func_args[i].arg_type) == AST_NODE_FUNC_CALL ||
@@ -535,8 +505,6 @@ static void _operator_code_gen(ast_node_t* op_node)
         if (op_node->type == AST_NODE_BINARY_OP_ASSIGNMENT) {
             if (left_operand->type == AST_NODE_ID) {
                 char* var_label = left_operand->symbol_loc->label->reg;
-                // printf("sym name: %s\n", left_operand->symbol_loc->symbol_name);
-                // printf("real label: %s\n", left_operand->symbol_loc->label->reg);
                 if (right_operand->type == AST_NODE_NUM) {
                     asm_tmp_reg_t* temp_register = _tmp_reg_alloc();
 
@@ -603,7 +571,6 @@ static void _operator_code_gen(ast_node_t* op_node)
                         _free_tmp_reg_by_name(left_operand->symbol_loc->label->reg);
                     }
                 }
-                // free(var_label);
             }
         }
 
@@ -904,7 +871,6 @@ static void _gen_if_else(ast_node_t* if_else_node, char* if_non_matched_label, c
     ast_node_t* children_if_else = if_else_node->children[2];
 
     _gen_condition(if_non_matched_label, cond);
-    // printf("cond_body->children[0]->type: %s\n", ast_str_node_type(cond_body->children[0]->type));
     if (cond_body->children[0]->type == AST_NODE_RETURN) {
         asm_tmp_reg_t* tmp_reg = _tmp_reg_alloc();
 
@@ -954,7 +920,6 @@ static void _gen_if_else(ast_node_t* if_else_node, char* if_non_matched_label, c
                     }
                 }
             }
-            // __ASM_GEN("j %s", _curr_rv_label);
         } else if (children_if_else->type == AST_NODE_IF_LOOP) {
 
         }
@@ -976,7 +941,6 @@ static void _code_gen_from_ast(ast_node_t** nodes, int num_children)
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("nodes[i]->type: %s\n", ast_str_node_type(nodes[i]->type));
         bool is_in_main = false;
 
         if (nodes[i]->type == AST_NODE_VAR_DECL) {
@@ -1199,8 +1163,6 @@ static inline void _prologue()
     __ASM_GEN("jr $ra");
 
     __GOLF_BUILT_IN__("getchar");
-    // __ASM_SYSCALL(12);
-    // __ASM_GEN("jr $ra");
     __ASM_GEN("addi $sp,$sp,-4");
     __ASM_GEN("sw $ra,0($sp)");
     __ASM_GEN("li $v0,8");
@@ -1308,13 +1270,9 @@ static void _var_label_build(ast_node_t** nodes, int num_children)
             if (strcmp(nodes[i]->symbol_loc->symbol_name, "there_is_no_comparison_there_is_only_zuul") == 0) {
                 strcpy(nodes[i]->symbol_loc->symbol_name, "there_is_no_comparison_there_is_only_");
             }
-            // printf("Func name: %s\n", nodes[i]->symbol_loc->symbol_name);
             _count_num_local_var_in_func(nodes[i], nodes[i]->children, nodes[i]->num_children);
-            // printf("Num local var: %d\n", nodes[i]->num_local_var);
         }
         if (nodes[i]->type == AST_NODE_STRING) {
-            // nodes[i]->memory_reg = asm_register_alloc("S1");
-            // printf("before alloc: %s\n", nodes[i]->memory_reg->reg);
             if (nodes[i]->node_info->lexeme[0] != 0) {
                 nodes[i]->memory_reg = __REGISTER__(__ASM_STRING_L__);
             } else {
@@ -1337,7 +1295,6 @@ static void _allocate_var_from_ast(ast_node_t** nodes, int num_children)
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("nodes[i]->type: %s\n", ast_str_node_type(nodes[i]->type));
         if (nodes[i]->type == AST_NODE_VAR_GLOBAL_DECL) {
             _gen_var_label(nodes[i]->symbol_loc->symbol_name);
             if (strcmp(nodes[i]->symbol_loc->sig, SEMANTICS_TYPE_STRING) == 0) {
@@ -1359,7 +1316,6 @@ static void _allocate_var_from_ast(ast_node_t** nodes, int num_children)
             if (nodes[i]->node_info->lexeme[0] != 0) {
                 _print_string_constant(nodes[i]->memory_reg->reg, nodes[i]->node_info->lexeme);
             }
-            // nodes[i]->memory_reg = asm_register_alloc(_data_string_alloc(nodes[i]->node_info->lexeme));
         }
         _allocate_var_from_ast(nodes[i]->children, nodes[i]->num_children);
     }

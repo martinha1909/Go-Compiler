@@ -206,7 +206,6 @@ static const char* _operands_type_check(ast_node_t* operator_node)
 {
     int i;
     const char* ret = NULL;
-    // printf("Operator: %s\n", ast_str_node_type(operator_node->type));
 
     for (i = 0; i < ARRAY_LENGTH(LEGAL_OPERATOR_OPERANDS); i++) {
         if (strcmp(ast_str_node_type(operator_node->type), LEGAL_OPERATOR_OPERANDS[i].op) == 0) {
@@ -446,7 +445,6 @@ static void _semantics_decl_check(ast_node_t** nodes, int num_children)
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("node type: %s\n", ast_str_node_type(nodes[i]->type));
         if (nodes[i]->type == AST_NODE_VAR_GLOBAL_DECL) {
             ast_node_t* var_type = nodes[i]->children[1];
 
@@ -487,17 +485,10 @@ static void _semantics_decl_check(ast_node_t** nodes, int num_children)
             ast_node_t* func_call_params = nodes[i]->children[1];
             bool func_call_next = false;
 
-            // printf("func_call_id: %s\n", func_call_id->node_info->lexeme);
-
             /* check if the function that is being called exists */
             func_call_id->symbol_loc = semantics_lookup(func_call_id);
 
             if (func_call_params->num_children > 0) {
-                // if (func_call_params->children[0]->type == AST_NODE_FUNC_CALL ||
-                //     func_call_params->children[1]->type == AST_NODE_FUNC_CALL) {
-                //     _semantics_decl_check(func_call_params->children, func_call_params->num_children);
-                //     continue;
-                // } else {
                 for (j = 0; j < func_call_params->num_children; j++) {
                     ast_node_t* param = func_call_params->children[j];
 
@@ -509,7 +500,6 @@ static void _semantics_decl_check(ast_node_t** nodes, int num_children)
                         param->symbol_loc = semantics_lookup(param);
                     }
                 }
-                // }
             }
 
             if (func_call_next) {
@@ -554,7 +544,6 @@ static void _semantics_type_check(ast_node_t** nodes, int num_children)
     }
 
     for (i = 0; i < num_children; i++) {
-        // printf("node->type: %s\n", ast_str_node_type(nodes[i]->type));
         if (nodes[i]->type == AST_NODE_VAR_DECL ||
             nodes[i]->type == AST_NODE_VAR_GLOBAL_DECL) {
             ast_node_t* var_name = nodes[i]->children[0];
@@ -723,7 +712,6 @@ static void _semantics_miscellaneous_check(ast_node_t** nodes, int num_children)
 
     for (i = 0; i < num_children; i++) {
         if (nodes[i]->type == AST_NODE_FUNC) {
-            // printf("Func name: %s\n", nodes[i]->children[0]->node_info->lexeme);
             ast_node_t* func_block = nodes[i]->children[2];
             ast_node_t* return_stmt_node = NULL;
             bool return_stmt_found = _found_return_stmt(func_block->children, func_block->num_children);

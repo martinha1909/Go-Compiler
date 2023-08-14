@@ -365,25 +365,15 @@ Type            :   ID  {$$ = $1;}
 Block           :   "{" newline_opt StatementList "}" semi_colon_opt newline_opt   {
                                                                                         $$ = NULL;
                                                                                         int i;
-                                                                                        // ast_node_t* block_node = ast_node_alloc(NULL,
-                                                                                        //                                         AST_NODE_BLOCK,
-                                                                                        //                                         ast_blocks_num_children_pop(),
-                                                                                        //                                         NULL);
-                                                                                        // ast_assembled_nodes_append(block_node);
                                                                                         $$ = ast_node_alloc(NULL,
                                                                                                             AST_NODE_BLOCK,
                                                                                                             0,
                                                                                                             NULL);
-                                                                                        // printf("alloc...\n");
                                                                                         for (i = 0; i < $3->size; i++) {
                                                                                             ast_children_append(&$$->children,
                                                                                                                 &$$->num_children,
                                                                                                                 $3->nodes[i]);
                                                                                         }
-                                                                                        // printf("printing.....\n");
-                                                                                        // ast_node_print($$);
-                                                                                        // ast_assembled_nodes_reset();
-                                                                                        // $$ = NULL;
                                                                                     }
                 ;
 
@@ -392,17 +382,11 @@ StatementList   :   %empty  {
                                 $$ = (ast_node_list_t*)calloc(sizeof(ast_node_list_t), 1);
                                 $$->nodes = NULL;
                                 $$->size = 0;
-                                // printf("resetting...\n");
-                                // ast_assembled_nodes_print();
-                                // ast_assembled_nodes_reset();
                             }
                 |   StatementList Statement semi_colon_opt newline_opt  {
                                                                 if ($2 != NULL) {
                                                                     $$ = $1;
                                                                     ast_node_list_append($1, $2);
-                                                                    // printf("appending...\n");
-                                                                    // ast_node_print($2);
-                                                                    // ast_assembled_nodes_append($2);
                                                                     ast_repete_rules_nodes_reset();
                                                                 }
                                                             }
@@ -495,8 +479,6 @@ FunctionName    :   ID  {
 FunctionBody    :   Block   {
                                 $$ = NULL;
                                 $$ = $1;
-                                // ast_assembled_nodes_print();
-                                // $$ = ast_node_alloc_from_assembled_nodes();
                             }
                 ;
 
@@ -611,32 +593,6 @@ ParameterDecl   :   ID Type {
                 ;
 
 Arguments       :   "(" ")"
-                // |   ID "-" NUM  {
-                //                     if ($3->lexeme != NULL) {
-                //                         free($3->lexeme);
-                //                         $3->lexeme = NULL;
-                //                     }
-                //                     ast_node_t* op_node = ast_node_alloc($3,
-                //                                                             AST_NODE_BINARY_OP_SUB,
-                //                                                             0,
-                //                                                             NULL);
-                //                     ast_node_t* id_node = ast_node_alloc($2,
-                //                                                             AST_NODE_ID,
-                //                                                             0,
-                //                                                             NULL);
-                //                     ast_node_t *num_node = ast_node_alloc($4,
-                //                                                             AST_NODE_NUM,
-                //                                                             0,
-                //                                                             NULL);
-                //                     ast_children_append(&(op_node->children),
-                //                                         &(op_node->num_children),
-                //                                         id_node);
-                //                     ast_children_append(&(op_node->children),
-                //                                         &(op_node->num_children),
-                //                                         num_node);
-                //                     ast_repete_rules_nodes_append(op_node);
-                //                     ast_func_call_actual_increment();
-                //                 }
                 |   "(" unary_op int_lit mul_op unary_op int_lit ")"    {
                                                                             char new_lex[PATH_MAX];
 
@@ -1218,7 +1174,6 @@ IfStmt          :   "if" Expression Block   {
                                                     }
                                                     ast_children_append(&children, &num_children, $2);
                                                     ast_children_append(&children, &num_children, $3);
-                                                    // ast_children_append(&children, &num_children, ast_node_alloc_from_assembled_nodes());
                                                     if (children != NULL) {
                                                         $$ = ast_node_alloc($1,
                                                                             AST_NODE_IF_LOOP,
