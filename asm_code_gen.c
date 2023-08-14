@@ -121,38 +121,14 @@ static bool                     _print_string_begin = true;
 static bool                     _rv_found = false;
 static bool                     _built_in_redefined = false;
 static asm_tmp_reg_t _temp_regs[] = {
-    {
-        "$t0",
-        false
-    },
-    {
-        "$t1",
-        false
-    },
-    {
-        "$t2",
-        false
-    },
-    {
-        "$t3",
-        false
-    },
-    {
-        "$t4",
-        false
-    },
-    {
-        "$t5",
-        false
-    },
-    {
-        "$t6",
-        false
-    },
-    {
-        "$t7",
-        false
-    }
+    {"$t0", false},
+    {"$t1", false},
+    {"$t2", false},
+    {"$t3", false},
+    {"$t4", false},
+    {"$t5", false},
+    {"$t6", false},
+    {"$t7", false}
 };
 
 static void _free_tmp_reg_by_name(const char* tmp_reg_name)
