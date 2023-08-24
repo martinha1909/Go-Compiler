@@ -9,7 +9,7 @@
 
 ### Notes
 
-The difference between the scanner in this repository compared to that of the reference compiler provided by the professor is:
+The difference between the scanner in this repository compared to that of the reference compiler is:
  - The reference compiler treats `^` as an unknown character, hence, when this character is encountered, the reference compiler will treat this as a warning instead of errors
  - The scanner in this repository treats the `^` as an error since it is the `XOR` bitwise operator. The reason for this is to keep the consistency in outputing error messages that match with the `AND` and `OR` bitwise operators. 
 
