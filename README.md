@@ -1,9 +1,3 @@
-# CPSC411Project
-
-Run `make` in the root directory of this project, which will create the `golf` binary executable. 
-
-This `golf` executable takes in 1 input, which is the path of an input file for scanning. 
-
 ## Lay out of the repository
 
 `include/` directory contains header files
